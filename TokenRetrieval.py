@@ -47,7 +47,9 @@ def safe_exp(logp: Optional[float]) -> Optional[float]:
     except OverflowError:
         return 0.0
 
-def return_result(max_tokens: int, temperature: float, logprobs: int, prompt: str, model: str = MODEL) -> dict:
+def return_result(max_tokens: int, temperature: float, logprobs: int, prompt: str, 
+                  model: str = MODEL, system_prompt: str = "", top_k: int = None, 
+                  top_p: float = None, seed: int = None) -> dict:
     """
     Send a completion request and return the parsed results dict.
 
@@ -66,6 +68,16 @@ def return_result(max_tokens: int, temperature: float, logprobs: int, prompt: st
         "temperature": temperature,
         "logprobs": logprobs,
     }
+    
+    # Add optional parameters if provided
+    if system_prompt:
+        payload["system_prompt"] = system_prompt
+    if top_k is not None:
+        payload["top_k"] = top_k
+    if top_p is not None:
+        payload["top_p"] = top_p
+    if seed is not None:
+        payload["seed"] = seed
 
     resp = requests.post(endpoint, headers=headers, json=payload, timeout=120)
     try:
@@ -165,7 +177,9 @@ def return_result(max_tokens: int, temperature: float, logprobs: int, prompt: st
     return results
 
 
-def return_results(prompt: str = PROMPT, max_tokens: int = MAX_TOKENS, temperature: float = TEMPERATURE, logprobs: int = TOP_LOGPROBS, model: str = MODEL) -> dict:
+def return_results(prompt: str = PROMPT, max_tokens: int = MAX_TOKENS, 
+                   temperature: float = TEMPERATURE, logprobs: int = TOP_LOGPROBS, 
+                   model: str = MODEL) -> dict:
     return return_result(max_tokens=max_tokens, temperature=temperature, logprobs=logprobs, prompt=prompt, model=model)
 
 

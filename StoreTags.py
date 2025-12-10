@@ -33,8 +33,17 @@ if __name__ == "__main__":
         print(f'Query: {queries[i]}\n-------ChatGPT Response-------\n{response[i]}\nHallucination: {tag[i]}')
 
         for x in range(3):
-            results = return_results(prompt=queries[i], max_tokens=100, temperature=0.25, logprobs=5) 
-            print(f'\n-------Llama Response-------\n{results["generated_text"]}')
+            results = return_results(
+                prompt=queries[i], 
+                max_tokens=100, 
+                temperature=0.25, 
+                logprobs=5,
+                system_prompt="You are a helpful assistant.",  # Add your system prompt
+                top_k=10,
+                top_p=0.9,
+                seed=42        # Set your seed for reproducibility
+            ) 
+            print(f'\n-------Llama Response-------\n{results["generated_text"]}\n')
         
             while True:
                 try:
@@ -47,11 +56,16 @@ if __name__ == "__main__":
                     print("input either 1 or 0")
 
             results["label"] = label
-            print("\n")
-            with open("dataset.jsonl", "a", encoding="utf-8") as f:
-                json.dump(results, f, ensure_ascii=False)
-                f.write("\n")
+            try:
+                with open("dataset.jsonl", "a", encoding="utf-8") as f:
+                    json.dump(results, f, ensure_ascii=False)
+                    f.write("\n")
+            except Exception as e:
+                print(e)
+                raise RuntimeError("\n---stored unsccessfully---")
+            else:
+                print("Successfully stored\n")
 
 
-    
+
 
