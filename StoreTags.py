@@ -1,5 +1,5 @@
 import json
-from TokenRetrieval import return_results
+from AnswerRetrieval import return_results
 
 class FileLoader:
     def __init__(self, filepath="general_data.json"):
@@ -10,7 +10,7 @@ class FileLoader:
             for line in f:
                 yield json.loads(line)
 
-def retrieve(dataset, key:str):
+def retrieve_to(dataset, key:str):
     """
     :param key: user_query or chatgpt_response or hallucination or hallucination_spans
     :type key: str
@@ -23,9 +23,9 @@ def retrieve(dataset, key:str):
 if __name__ == "__main__":
 
     halueval = FileLoader()
-    queries = retrieve(dataset=halueval, key="user_query")
-    response = retrieve(dataset=halueval, key="chatgpt_response")
-    tag = retrieve(dataset=halueval, key="hallucination")
+    queries = retrieve_to(dataset=halueval, key="user_query")
+    response = retrieve_to(dataset=halueval, key="chatgpt_response")
+    tag = retrieve_to(dataset=halueval, key="hallucination")
 
     for i in range(len(queries)):
 
@@ -34,17 +34,15 @@ if __name__ == "__main__":
 
         for x in range(3):
             results = return_results(
-                prompt=queries[i], 
-                max_tokens=100, 
-                temperature=0.25, 
+                model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+                prompt=queries[i],
+                temperature=1.0,
                 logprobs=5,
-                system_prompt="You are a helpful assistant.",  # Add your system prompt
                 top_k=10,
                 top_p=0.9,
-                seed=42        # Set your seed for reproducibility
             ) 
+
             print(f'\n-------Llama Response-------\n{results["generated_text"]}\n')
-        
             while True:
                 try:
                     label = int(input())
@@ -54,17 +52,13 @@ if __name__ == "__main__":
                         break
                 except ValueError:
                     print("input either 1 or 0")
-
             results["label"] = label
-            try:
-                with open("dataset.jsonl", "a", encoding="utf-8") as f:
-                    json.dump(results, f, ensure_ascii=False)
-                    f.write("\n")
-            except Exception as e:
-                print(e)
-                raise RuntimeError("\n---stored unsccessfully---")
-            else:
-                print("Successfully stored\n")
+
+
+            with open("dataset.jsonl", "a", encoding="utf-8") as f:
+                json.dump(results, f, ensure_ascii=False)
+                f.write("\n")
+            print("---Successfully stored---\n")
 
 
 
