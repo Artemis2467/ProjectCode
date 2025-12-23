@@ -32,17 +32,19 @@ if __name__ == "__main__":
         print(f"{i + 1}/{len(queries)}\n")
         print(f'Query: {queries[i]}\n-------ChatGPT Response-------\n{response[i]}\nHallucination: {tag[i]}')
 
-        for x in range(3):
-            results = return_results(
+        results = {}
+
+        for x in range(2):
+            result = return_results(
                 model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
                 prompt=queries[i],
-                temperature=1.0,
+                temperature=1.1,
                 logprobs=5,
                 top_k=10,
                 top_p=0.9,
             ) 
 
-            print(f'\n-------Llama Response-------\n{results["generated_text"]}\n')
+            print(f'\n-------Llama Response-------\n{result["generated_text"]}\n')
             while True:
                 try:
                     label = int(input())
@@ -52,14 +54,13 @@ if __name__ == "__main__":
                         break
                 except ValueError:
                     print("input either 1 or 0")
-            results["label"] = label
-
-
-            with open("dataset.jsonl", "a", encoding="utf-8") as f:
-                json.dump(results, f, ensure_ascii=False)
-                f.write("\n")
-            print("---Successfully stored---\n")
+            result["label"] = label
+            
+            results[x] = result
 
 
 
-
+        with open("dataset.jsonl", "a", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False)
+            f.write("\n")
+        print("---Successfully stored---\n")

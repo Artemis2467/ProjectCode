@@ -1,16 +1,7 @@
 from together import Together
-from typing import List
 import json
 
-client = Together(api_key="tgp_v1_A7ddbftsUdpKjhmtzMQBplkDPXP3uI82cYTgbh5migo")
-
-def get_embeddings(texts: List[str], model: str) -> List[List[float]]:
-  texts = [text.replace("\n", " ") for text in texts]
-  outputs = client.embeddings.create(model=model, input = texts)
-  return [outputs.data[i].embedding for i in range(len(texts))]
-
-input_texts = ['Our solar system orbits the Milky Way galaxy at about 515,000 mph']
-embeddings = get_embeddings(input_texts, model='togethercomputer/m2-bert-80M-8k-retrieval')
+client = Together(api_key="tgp_v1_4RlBdavCEHPh5uJtGA9N-d7Bme46kw-pilbS4ft6P4w")
 
 def return_results(
         model: str,
@@ -27,7 +18,8 @@ def return_results(
     messages=[
       {
         "role": "system",
-        "content": "You are a helpful assistant that will answer the question as simple as possible. You will answer within 50 tokens."
+        "content": "You are a confident, concise and highly imaginative assistant. "
+        "Your goal is to provide a direct answer to every question in exactly 50-75 tokens. "
       },
       {
         "role": "user", 
