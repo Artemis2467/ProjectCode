@@ -1,28 +1,36 @@
+import math
+import re
+import json
+import torch
+import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
-from StoreDataset import FileLoader
+from StoreDataset import FileLoader, retrieve_to
+
+
 
 def retrieve_logprobs():
-    dataset = FileLoader("dataset.jsonl")
+    dataset = FileLoader("AnsDataset.jsonl")
     for obj in dataset:
         result = []
-        for i in range(2):
-            result.append(obj[f"{i}"]["top_logprobs"])
+        result.append(obj["0"]["top_logprobs"])
+        result.append(obj["1"]["top_logprobs"])
         yield result
 
+
 def retrieve_label():
-    dataset = FileLoader("dataset.jsonl")
+    dataset = FileLoader("AnsDataset.jsonl")
     for obj in dataset:
         result = []
-        for i in range(2):
-            result.append(obj[f"{i}"]["label"])
+        result.append(obj["0"]["label"])
+        result.append(obj["1"]["label"])
         yield result
 
 def retrieve_text():
-    dataset = FileLoader("dataset.jsonl")
+    dataset = FileLoader("AnsDataset.jsonl")
     for obj in dataset:
         result = []
-        for i in range(2):
-            result.append(obj[f"{i}"]["generated_text"])
+        result.append(obj["0"]["generated_text"])
+        result.append(obj["1"]["generated_text"])
         yield result
 
 def retrieve_embed():
@@ -30,6 +38,40 @@ def retrieve_embed():
     for obj in retrieve_text():
         embeddings = []
         for text in obj:
-            embed = model.encode(text[0])
+            cleaned_text = re.sub("[|*-`]", " ", text)
+            embed = model.encode(cleaned_text)
             embeddings.append(embed)
         yield embeddings
+
+def perplexity(logprobs):
+    count = 0
+    total = 0.0
+    for token in logprobs:
+        for token_prob in token.values():
+            if token_prob is None:
+                continue
+            total += token_prob * math.exp(token_prob)
+        count += 1
+    result =  math.exp(total / count * -1)
+    return result
+
+def store_data():
+
+    for i, (embed, logprobs) in enumerate(zip(retrieve_embed(), retrieve_logprobs())):
+
+        first_embedding = torch.from_numpy(embed[0])
+        second_embedding = torch.from_numpy(embed[1])
+        text_perplexity = 0
+
+        for logprob in logprobs:
+            text_perplexity += perplexity(logprob)
+
+        avg_perplexity = text_perplexity / 2
+        cos_sim = F.cosine_similarity(first_embedding, second_embedding, dim=0).tolist()
+        res = {
+            i: (cos_sim, avg_perplexity)
+            }
+
+        with open("CalDataset.jsonl", "a", encoding="utf-8") as f:
+            json.dump(res, f, ensure_ascii=False)
+            f.write("\n")
