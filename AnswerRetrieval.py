@@ -18,8 +18,7 @@ def return_results(
     messages=[
       {
         "role": "system",
-        "content": "You are a confident, concise and highly imaginative assistant. "
-        "Your goal is to provide a direct answer to every question in exactly 50-75 tokens. "
+        "content": "answer the questions as short as possible. Avoid using any form of code."
       },
       {
         "role": "user", 
@@ -45,6 +44,8 @@ def return_results(
 
 if __name__ == "__main__":
   with open("generation_results.json", "w", encoding="utf-8") as out_f:
-          json.dump(return_results("meta-llama/Llama-3.2-3B-Instruct-Turbo", "Generate some random English words"), out_f, indent=2, ensure_ascii=False)
-
-
+          json.dump(
+              return_results("meta-llama/Llama-3.2-3B-Instruct-Turbo", "Generate some random English words"),
+              out_f,
+              indent=2,
+              ensure_ascii=False)

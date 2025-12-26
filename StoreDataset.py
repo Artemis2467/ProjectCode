@@ -35,13 +35,15 @@ if __name__ == "__main__":
         results = {}
 
         for x in range(2):
-            result = return_results(
+            
+            result = return_results( # Change these settings if you want to test them on your own
                 model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
                 prompt=queries[i],
                 temperature=1.1,
                 logprobs=5,
                 top_k=10,
                 top_p=0.9,
+                max_tokens=150,
             ) 
 
             print(f'\n-------Llama Response-------\n{result["generated_text"]}\n')
@@ -60,7 +62,7 @@ if __name__ == "__main__":
 
 
 
-        with open("dataset.jsonl", "a", encoding="utf-8") as f:
+        with open("AnsDataset.jsonl", "a", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False)
             f.write("\n")
         print("---Successfully stored---\n")
