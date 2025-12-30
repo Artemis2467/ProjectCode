@@ -4,11 +4,18 @@ from AnswerRetrieval import return_results
 class FileLoader:
     def __init__(self, filepath="general_data.json"):
         self.filepath = filepath
-    
+
     def __iter__(self):
         with open(self.filepath, "r", encoding='utf-8') as f:
             for line in f:
                 yield json.loads(line)
+
+    def __len__(self):
+        count = 0
+        with open(self.filepath, "r", encoding="utf-8") as f:
+            for line in f:
+                count += 1
+        return count
 
 def retrieve_to(dataset, key:str):
     """
@@ -27,10 +34,15 @@ if __name__ == "__main__":
     response = retrieve_to(dataset=halueval, key="chatgpt_response")
     tag = retrieve_to(dataset=halueval, key="hallucination")
 
-    for i in range(len(queries)):
+    dataset = FileLoader(filepath="AnsDataset.jsonl")
+    dataset_len = len(dataset)
+    queries_len = len(queries)
 
-        print(f"{i + 1}/{len(queries)}\n")
-        print(f'Query: {queries[i]}\n-------ChatGPT Response-------\n{response[i]}\nHallucination: {tag[i]}')
+    for i in range(queries_len - dataset_len):
+
+        print("\n")
+        print(f"{i + dataset_len + 1}/{queries_len}\n")
+        print(f'Query: {queries[dataset_len + i]}\n-------ChatGPT Response-------\n{response[dataset_len + i]}\nHallucination: {tag[dataset_len + i]}')
 
         results = {}
 
@@ -38,7 +50,7 @@ if __name__ == "__main__":
             
             result = return_results( # Change these settings if you want to test them on your own
                 model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
-                prompt=queries[i],
+                prompt=queries[dataset_len + i],
                 temperature=1.1,
                 logprobs=5,
                 top_k=10,

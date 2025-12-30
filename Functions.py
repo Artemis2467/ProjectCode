@@ -14,7 +14,6 @@ def retrieve_logprobs():
         result.append(obj["1"]["top_logprobs"])
         yield result
 
-
 def retrieve_label():
     dataset = FileLoader("AnsDataset.jsonl")
     for obj in dataset:
@@ -22,6 +21,11 @@ def retrieve_label():
         result.append(obj["0"]["label"])
         result.append(obj["1"]["label"])
         yield result
+
+def retrieve_tag():
+    halueval = FileLoader()
+    tag = retrieve_to(dataset=halueval, key="hallucination")
+    return tag
 
 def retrieve_text():
     dataset = FileLoader("AnsDataset.jsonl")
