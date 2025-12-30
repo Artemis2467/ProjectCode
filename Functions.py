@@ -6,8 +6,6 @@ import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
-
-
 def retrieve_logprobs():
     dataset = FileLoader("AnsDataset.jsonl")
     for obj in dataset:
@@ -68,9 +66,7 @@ def store_data():
 
         avg_perplexity = text_perplexity / 2
         cos_sim = F.cosine_similarity(first_embedding, second_embedding, dim=0).tolist()
-        res = {
-            i: (cos_sim, avg_perplexity)
-            }
+        res = {i: (cos_sim, avg_perplexity)}
 
         with open("CalDataset.jsonl", "a", encoding="utf-8") as f:
             json.dump(res, f, ensure_ascii=False)
