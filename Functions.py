@@ -47,7 +47,7 @@ def retrieve_embed():
 
 def perplexity(logprobs):
     count = 0
-    total = 0.0
+    total = 0
     for token in logprobs:
         for token_prob in token.values():
             if token_prob is None:
