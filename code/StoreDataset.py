@@ -1,3 +1,12 @@
+## Both of the datasets are Jsonl files. 
+## 1. A dataset consisting of 4500 queries used to ask ChatGPT and the ChatGPT's response. 
+## (The queries were said to be tested in the HaluEval's paper to trigger hallucination) 
+## Every one of them have a tag marking if it is a hallucination. 
+## 2. A dataset consisting of queries from HaluEval, the response of 
+## Llama-3.2-3B-Instruct-Turbo for these queries, the first five logits for each tokens of the response,
+## and my annotated tag (whether if it is a hallucination). There is not much data right now, but I plan to finish annotating before March.
+## The actual files are not named like this in the file
+
 import json
 import os
 from AnswerRetrieval import return_results
