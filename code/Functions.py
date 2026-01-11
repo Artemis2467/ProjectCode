@@ -1,3 +1,4 @@
+import os
 import math
 import re
 import json
@@ -45,7 +46,7 @@ def retrieve_embed():
             embeddings.append(embed)
         yield embeddings
 
-def perplexity(logprobs):
+def avg_perplexity(logprobs):
     count = 0
     total = 0
     for token in logprobs:
@@ -66,12 +67,12 @@ def store_data():
         text_perplexity = 0
 
         for logprob in logprobs:
-            text_perplexity += perplexity(logprob)
+            text_perplexity += avg_perplexity(logprob)
 
-        avg_perplexity = text_perplexity / 2
+        avg_p = text_perplexity / 2
         cos_sim = F.cosine_similarity(first_embedding, second_embedding, dim=0).tolist()
-        res = {i: (cos_sim, avg_perplexity)}
+        res = {i: (cos_sim, avg_p)}
 
-        with open("CalDataset.jsonl", "a", encoding="utf-8") as f:
+        with open(os.path.join("Datasets", "CalDataset.jsonl"), "a", encoding="utf-8") as f:
             json.dump(res, f, ensure_ascii=False)
             f.write("\n")

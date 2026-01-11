@@ -1,9 +1,10 @@
 import json
+import os
 from AnswerRetrieval import return_results
 
 class FileLoader:
-    def __init__(self, filepath="general_data.json"):
-        self.filepath = filepath
+    def __init__(self, filepath="general_data.jsonl"):
+        self.filepath = os.path.join("Datasets", filepath)
 
     def __iter__(self):
         with open(self.filepath, "r", encoding='utf-8') as f:

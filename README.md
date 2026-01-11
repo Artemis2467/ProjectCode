@@ -1,3 +1,3 @@
 **AP Research Project Code**
 
-**_LLM Hallucination detection using Cosine Similarity and Token Entropy_**
+**_LLM Hallucination detection based on Cosine Similarity and Token Entropy_**

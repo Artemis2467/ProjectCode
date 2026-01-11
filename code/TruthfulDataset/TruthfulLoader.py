@@ -1,6 +1,6 @@
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader
 import numpy as np
+from torch.utils.data import Dataset, DataLoader
 
 class LoadDataset(Dataset):
     def __init__(self, questions, statements, labels):

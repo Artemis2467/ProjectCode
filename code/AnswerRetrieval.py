@@ -1,6 +1,5 @@
 from together import Together
 import os
-import json
 
 client = Together(api_key=os.environ["TOGETHER_API_KEY"])
 
@@ -42,12 +41,3 @@ def return_results(
   }
 
   return res
-
-if __name__ == "__main__":
-  with open("generation_results.json", "w", encoding="utf-8") as out_f:
-          json.dump(
-              return_results("meta-llama/Llama-3.2-3B-Instruct-Turbo", "Generate some random English words"),
-              out_f,
-              indent=2,
-              ensure_ascii=False
-              )
