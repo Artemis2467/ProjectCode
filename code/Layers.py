@@ -95,7 +95,6 @@ class LinearModel(nn.Module):
         combined = torch.cat([cosine_sim, perplexity], dim=1)
         linear_output1 = self.fc1(combined)
         normalized = self.batch_norm(linear_output1)
-        activised = F.relu(normalized)
         linear_output2 = self.fc2(normalized)
         res = F.sigmoid(linear_output2)
 
