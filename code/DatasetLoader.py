@@ -7,7 +7,7 @@ raw_dataset =  load_dataset("json", data_files=r"Datasets\AnsDataset.jsonl", spl
 raw_dataset_cal = load_dataset("json", data_files=r"Datasets\CalDataset.jsonl", split="train")
     
 class LogprobDataset(Dataset):
-    def __init__(self, lp_dataset=raw_dataset, cal_dataset=raw_dataset_cal):
+    def __init__(self, lp_dataset, cal_dataset):
         super().__init__()
         
         self.lp = lp_dataset
@@ -41,7 +41,7 @@ class LogprobDataset(Dataset):
         }
     
 class LinearDataset(Dataset):
-    def __init__(self, orig_dataset=raw_dataset, cal_dataset=raw_dataset_cal):
+    def __init__(self, orig_dataset, cal_dataset):
         super().__init__()
 
         self.org = orig_dataset
@@ -85,7 +85,10 @@ def collate_fn(batch):
         "labels": labels
     }
 
-logprob_dataset = LogprobDataset()
+logprob_dataset = LogprobDataset(
+    lp_dataset=raw_dataset,
+    cal_dataset=raw_dataset_cal
+)
 
 logprob_loader = DataLoader(
     dataset=logprob_dataset, 
@@ -94,7 +97,10 @@ logprob_loader = DataLoader(
     collate_fn=collate_fn,
 )
 
-linear_dataset = LinearDataset()
+linear_dataset = LinearDataset(
+    orig_dataset=raw_dataset,
+    cal_dataset=raw_dataset_cal
+)
 
 linear_loader = DataLoader(
     dataset=linear_dataset,
