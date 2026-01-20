@@ -57,6 +57,7 @@ if __name__ == "__main__":
         print(f'Query: {queries[dataset_len + i]}\n-------ChatGPT Response-------\n{response[dataset_len + i]}\nHallucination: {tag[dataset_len + i]}')
 
         results = {}
+        results["label"] = []
 
         for x in range(2):
             
@@ -80,13 +81,12 @@ if __name__ == "__main__":
                         break
                 except ValueError:
                     print("input either 1 or 0")
-            result["label"] = label
-            
-            results[x] = result
 
+            results["label"].append(label)
+            results[f"text{x + 1}"] = result["generated_text"]
+            results[f"top_logprobs{x + 1}"] = result["top_logprobs"]
 
-
-        with open("AnsDataset.jsonl", "a", encoding="utf-8") as f:
+        with open(r"Datasets\AnsDataset.jsonl", "a", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False)
             f.write("\n")
         print("---Successfully stored---\n")

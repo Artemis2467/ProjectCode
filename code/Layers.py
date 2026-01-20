@@ -58,7 +58,7 @@ class LogitModel(nn.Module):
         self.fc_attention = nn.Linear(in_features=32, out_features=out_features)
         self.fc_final = nn.Linear(in_features=3, out_features=1)
 
-    def forward(self, resp1_logits, resp2_logits, cosine_sim, perplexity):
+    def forward(self, resp1_logits, resp2_logits, cosine_sim, entropy):
         position1 = self.pe(resp1_logits)
         position2 = self.pe(resp2_logits)
 
@@ -75,9 +75,9 @@ class LogitModel(nn.Module):
         attention_score = self.fc_attention(dropped)
 
         cosine_sim = cosine_sim.unsqueeze(1)
-        perplexity = perplexity.unsqueeze(1)
+        entropy = entropy.unsqueeze(1)
 
-        res = self.fc_final(torch.cat([attention_score, cosine_sim, perplexity], dim=1))
+        res = self.fc_final(torch.cat([attention_score, cosine_sim, entropy], dim=1))
 
         return F.sigmoid(res)
 
@@ -90,9 +90,9 @@ class LinearModel(nn.Module):
         self.fc2 = nn.Linear(in_features=d_model, out_features=1)
         
     
-    def forward(self, cosine_sim, perplexity):
+    def forward(self, cosine_sim, entropy):
 
-        combined = torch.cat([cosine_sim, perplexity], dim=1)
+        combined = torch.cat([cosine_sim, entropy], dim=1)
         linear_output1 = self.fc1(combined)
         normalized = self.batch_norm(linear_output1)
         linear_output2 = self.fc2(normalized)

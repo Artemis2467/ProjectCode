@@ -31,9 +31,11 @@ def return_results(
     top_k = top_k,
     top_p = top_p,
   )
-  if logprobs:
-    response_logprobs = response.choices[0].logprobs.top_logprobs
+
+  response_logprobs = response.choices[0].logprobs.top_logprobs
   response_content = response.choices[0].message.content
+
+  response_logprobs = [[choice if choice is not None else -1e2 for choice in list(token.values())] for token in response_logprobs]
 
   res = {
     "generated_text": response_content,
