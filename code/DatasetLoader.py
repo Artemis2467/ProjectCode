@@ -85,6 +85,8 @@ def collate_fn(batch):
         "labels": labels
     }
 
+
+# Set datasets and dataloaders
 logprob_dataset = LogprobDataset(
     lp_dataset=raw_dataset,
     cal_dataset=raw_dataset_cal
@@ -94,7 +96,7 @@ logprob_loader = DataLoader(
     dataset=logprob_dataset, 
     batch_size=32,
     shuffle=True,
-    collate_fn=collate_fn,
+    collate_fn=collate_fn, # using a defined collate function, data length is different for every input
 )
 
 linear_dataset = LinearDataset(

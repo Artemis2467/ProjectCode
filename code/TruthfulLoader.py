@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 class LoadDataset(Dataset):
     def __init__(self, questions, statements, labels):
@@ -22,7 +22,7 @@ class LoadDataset(Dataset):
             yield self.__getitem__(i)
 
 def LoadData():
-    df = pd.read_csv('TruthfulQA.csv', usecols=["Question", "Correct Answers", "Incorrect Answers"])
+    df = pd.read_csv(r'Datasets\TruthfulQA.csv', usecols=["Question", "Correct Answers", "Incorrect Answers"])
     questions = np.tile(df["Question"].values, reps=2)
     statements = [x.split("; ") for x in df["Correct Answers"].values] + [x.split("; ") for x in df["Incorrect Answers"].values]
     label = [1 if i <= len(questions) // 2 else 0 for i in range(len(questions))]
@@ -30,30 +30,8 @@ def LoadData():
     # The dataset is set in this order (Question, statements, label)
     # the label indicates factuality (True or False)
     dataset = LoadDataset(questions, statements, label)
-    loader = DataLoader(dataset, batch_size=16, shuffle=True)
-    return dataset, loader
-
-
-#If you want to train model specifically based on dataset
-# (which is relatively too small) use this function to generate corpus
-def LoadCorpus(dataset):
-    corpus = {}
-    idx = 0
-    for i in range(len(dataset)):
-        for word in dataset[i][0][:-1].split():
-            if word.lower() not in corpus.values():
-                corpus[idx] = word.lower()
-                idx += 1
-        for x in range(len(dataset[i][1])):
-            for word in dataset[i][1][x].split():
-                if word.lower() not in corpus.values():
-                    corpus[idx] = word.lower()
-                    idx += 1
-    return corpus
+    return dataset
 
 if __name__ == "__main__":
-    dataset, loader = LoadData()
-    corp = LoadCorpus(dataset)
-    print(corp)
+    dataset= LoadData()
     print(dataset)
-    print(loader)

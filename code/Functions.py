@@ -8,6 +8,21 @@ import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
+def LoadCorpus(dataset):
+    corpus = {}
+    idx = 0
+    for i in range(len(dataset)):
+        for word in dataset[i][0][:-1].split():
+            if word.lower() not in corpus.values():
+                corpus[idx] = word.lower()
+                idx += 1
+        for x in range(len(dataset[i][1])):
+            for word in dataset[i][1][x].split():
+                if word.lower() not in corpus.values():
+                    corpus[idx] = word.lower()
+                    idx += 1
+    return corpus
+
 def retrieve_tag():
     halueval = FileLoader()
     tag = retrieve_to(dataset=halueval, key="hallucination")
