@@ -1,12 +1,14 @@
+import json
 import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
+from StoreDataset import FileLoader
+from AnswerRetrieval import return_results
 
 class LoadDataset(Dataset):
-    def __init__(self, questions, statements, labels):
+    def __init__(self, questions, statements):
         self.questions = questions
         self.statements = statements
-        self.labels = labels
 
     def __len__(self):
         return len(self.questions)
@@ -14,24 +16,64 @@ class LoadDataset(Dataset):
     def __getitem__(self, idx):
         questions = self.questions[idx]
         statements = self.statements[idx]
-        label = self.labels[idx]
-        return questions, statements, label
+        return questions, statements
 
-    def __iter__(self):
-        for i in range(self.__len__()):
-            yield self.__getitem__(i)
+def load_data():
+    df = pd.read_csv(r'Datasets\TruthfulQA.csv', usecols=["Question", "Best Answer",])
+    questions = np.array(df["Question"].values)
+    ans = np.array(df["Best Answer"])
 
-def LoadData():
-    df = pd.read_csv(r'Datasets\TruthfulQA.csv', usecols=["Question", "Correct Answers", "Incorrect Answers"])
-    questions = np.tile(df["Question"].values, reps=2)
-    statements = [x.split("; ") for x in df["Correct Answers"].values] + [x.split("; ") for x in df["Incorrect Answers"].values]
-    label = [1 if i <= len(questions) // 2 else 0 for i in range(len(questions))]
-
-    # The dataset is set in this order (Question, statements, label)
-    # the label indicates factuality (True or False)
-    dataset = LoadDataset(questions, statements, label)
+    dataset = LoadDataset(questions, ans)
     return dataset
 
 if __name__ == "__main__":
-    dataset= LoadData()
-    print(dataset)
+
+    ans_dataset = FileLoader(r"TruthfullDataset.jsonl")
+    dataset = load_data()
+
+    dataset_len = len(dataset)
+    ans_len = len(ans_dataset)
+
+    for i in range(dataset_len - ans_len):
+
+        query, ans = dataset[ans_len + i]
+
+        print(f"{i + ans_len + 1}/{dataset_len}\n")
+        print(f"##-----query-----##\n{query}\n\n-----Best Answer-----\n{ans}\n")
+
+        results = {}
+        results["label"] = []
+
+        for x in range(2):
+
+            result = return_results(
+                model="meta-llama/Llama-3.2-3B-Instruct-Turbo",
+                prompt=query,
+                temperature=1.1,
+                logprobs=5,
+                top_k=10,
+                top_p=0.9,
+                max_tokens=75,
+            )
+
+            print(f'\n-------Llama Response-------\n{result["generated_text"]}\n')
+            while True:
+                try:
+                    label = int(input())
+                    if label != 1 and label != 0:
+                        print("input either 1 or 0")
+                    else:
+                        break
+                except ValueError:
+                    print("input either 1 or 0")
+
+            results["label"].append(label)
+            results[f"text{x + 1}"] = result["generated_text"]
+            results[f"top_logprobs{x + 1}"] = result["top_logprobs"]
+
+        with open(r"Datasets\TruthfullDataset.jsonl", "a", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False)
+            f.write("\n")
+        print("---Successfully stored---\n")
+
+            
