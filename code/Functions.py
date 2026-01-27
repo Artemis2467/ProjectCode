@@ -28,25 +28,25 @@ def retrieve_tag():
     tag = retrieve_to(dataset=halueval, key="hallucination")
     return tag
 
-def retrieve_logprobs():
-    dataset = FileLoader("AnsDataset.jsonl")
+def retrieve_logprobs(ans_dataset: str):
+    dataset = FileLoader(ans_dataset)
     for obj in dataset:
         result = []
         result.append(obj["top_logprobs1"])
         result.append(obj["top_logprobs2"])
         yield result
 
-def retrieve_text():
-    dataset = FileLoader("AnsDataset.jsonl")
+def retrieve_text(ans_dataset: str):
+    dataset = FileLoader(ans_dataset)
     for obj in dataset:
         result = []
         result.append(obj["text1"])
         result.append(obj["text2"])
         yield result
 
-def retrieve_embed():
+def retrieve_embed(ans_dataset: str):
     model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-    for obj in retrieve_text():
+    for obj in retrieve_text(ans_dataset):
         embeddings = []
         for text in obj:
             cleaned_text = re.sub("[|*-`]", " ", text)
@@ -65,9 +65,9 @@ def logit_ent(logprobs):
     result =  -1 * (total / text_len)
     return result
 
-def store_data():
+def store_data(ans_dataset: str, cal_dataset: str):
 
-    for i, (embed, logprobs) in tqdm(enumerate(zip(retrieve_embed(), retrieve_logprobs()))):
+    for i, (embed, logprobs) in tqdm(enumerate(zip(retrieve_embed(ans_dataset), retrieve_logprobs(ans_dataset)))):
 
         embedding1 = torch.from_numpy(embed[0])
         embedding2 = torch.from_numpy(embed[1])
@@ -80,7 +80,7 @@ def store_data():
         res1 = {"cos_sim": cos_sim, "entropy": ent1}
         res2 = {"cos_sim": cos_sim, "entropy": ent2}
 
-        with open(os.path.join("Datasets", "CalDataset.jsonl"), "a", encoding="utf-8") as f:
+        with open(os.path.join("Datasets", cal_dataset), "a", encoding="utf-8") as f:
             json.dump(res1, f, ensure_ascii=False)
             f.write("\n")
             json.dump(res2, f, ensure_ascii=False)
