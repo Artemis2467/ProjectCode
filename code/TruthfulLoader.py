@@ -1,29 +1,34 @@
 import json
 import pandas as pd
-import numpy as np
 from torch.utils.data import Dataset
 from StoreDataset import FileLoader
 from AnswerRetrieval import return_results
 
-class LoadDataset(Dataset):
-    def __init__(self, questions, statements):
+class LoadDataset():
+    def __init__(self, questions, best_ans, cor_ans, inc_ans):
         self.questions = questions
-        self.statements = statements
+        self.best_ans = best_ans
+        self.cor_ans = cor_ans
+        self.inc_ans = inc_ans
 
     def __len__(self):
         return len(self.questions)
 
     def __getitem__(self, idx):
         questions = self.questions[idx]
-        statements = self.statements[idx]
-        return questions, statements
+        best_ans = self.best_ans[idx]
+        cor_ans = self.cor_ans[idx]
+        inc_ans = self.inc_ans[idx]
+        return questions, best_ans, cor_ans, inc_ans
 
 def load_data():
-    df = pd.read_csv(r'Datasets\TruthfulQA.csv', usecols=["Question", "Best Answer",])
-    questions = np.array(df["Question"].values)
-    ans = np.array(df["Best Answer"])
+    df = pd.read_csv(r'Datasets\TruthfulQA.csv', usecols=["Question", "Best Answer", "Correct Answers", "Incorrect Answers"])
+    questions = df["Question"].values
+    best_ans = df["Best Answer"].values
+    cor_ans = df["Correct Answers"].values
+    inc_ans = df["Incorrect Answers"].values
 
-    dataset = LoadDataset(questions, ans)
+    dataset = LoadDataset(questions, best_ans, cor_ans, inc_ans)
     return dataset
 
 if __name__ == "__main__":
@@ -36,10 +41,10 @@ if __name__ == "__main__":
 
     for i in range(dataset_len - ans_len):
 
-        query, ans = dataset[ans_len + i]
+        query, best_ans, cor_ans, inc_ans = dataset[ans_len + i]
 
         print(f"{i + ans_len + 1}/{dataset_len}\n")
-        print(f"##-----query-----##\n{query}\n\n-----Best Answer-----\n{ans}\n")
+        print(f"##-----query-----##\n{query}\n\n-----Best Answer-----\n{best_ans}\n\n-----Correct Answers-----\n{cor_ans}\n\n-----Incorrect Answers-----\n{inc_ans}")
 
         results = {}
         results["label"] = []
