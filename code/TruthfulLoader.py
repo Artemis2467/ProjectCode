@@ -1,6 +1,5 @@
 import json
 import pandas as pd
-from torch.utils.data import Dataset
 from StoreDataset import FileLoader
 from AnswerRetrieval import return_results
 

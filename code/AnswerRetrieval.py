@@ -18,7 +18,7 @@ def return_results(
     messages=[
       {
         "role": "system",
-        "content": "answer the questions as short as possible. Avoid using any form of code."
+        "content": "answer the questions as short as possible."
       },
       {
         "role": "user", 
