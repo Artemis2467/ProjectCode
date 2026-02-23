@@ -79,5 +79,3 @@ if __name__ == "__main__":
             json.dump(results, f, ensure_ascii=False)
             f.write("\n")
         print("---Successfully stored---\n")
-
-            
