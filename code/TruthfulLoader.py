@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     for i in range(dataset_len - ans_len):
 
-        query, best_ans, cor_ans, inc_ans = dataset[ans_len + i]
+        query, best_ans, cor_ans, inc_ans = dataset[ans_len + i - 1]
 
         print(f"{i + ans_len + 1}/{dataset_len}\n")
         print(f"##-----query-----##\n{query}\n\n-----Best Answer-----\n{best_ans}\n\n-----Correct Answers-----\n{cor_ans}\n\n-----Incorrect Answers-----\n{inc_ans}")
@@ -60,7 +60,11 @@ if __name__ == "__main__":
                 max_tokens=75,
             )
 
-            print(f'\n-------Llama Response-------\n{result["generated_text"]}\n')
+            response = result["generated_text"]
+
+            print(f'\n-------Llama Response-------\n{response}\n')
+            print(f"\n-----prompt-----\nquery: {query} ans: {response}\n")
+
             while True:
                 try:
                     label = int(input())
