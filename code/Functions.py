@@ -85,3 +85,6 @@ def store_data(ans_dataset: str, cal_dataset: str):
             f.write("\n")
             json.dump(res2, f, ensure_ascii=False)
             f.write("\n")
+
+if __name__ == "__main__":
+    store_data(ans_dataset="TruthfulDataset.jsonl", cal_dataset="CalDataset.jsonl")
