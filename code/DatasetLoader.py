@@ -1,10 +1,8 @@
 from datasets import load_dataset
+from Functions import LinearConfig, LogitConfig
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset, DataLoader
-
-raw_dataset =  load_dataset("json", data_files=r"Datasets\AnsDataset.jsonl", split="train")
-raw_dataset_cal = load_dataset("json", data_files=r"Datasets\CalDataset.jsonl", split="train")
+from torch.utils.data import Dataset, DataLoader, random_split
     
 class LogprobDataset(Dataset):
     def __init__(self, lp_dataset, cal_dataset):
@@ -85,27 +83,83 @@ def collate_fn(batch):
         "labels": labels
     }
 
+logitconfig = LogitConfig()
+linearconfig = LinearConfig()
 
-# Set datasets and dataloaders
+raw_dataset =  load_dataset("json", data_files=r"Datasets\TruthfulDataset.jsonl", split="train")
+raw_dataset_cal = load_dataset("json", data_files=r"Datasets\CalDataset.jsonl", split="train")
+
+# Set logprob dataset
+length = len(raw_dataset)
+
+train_len = int(logitconfig.train_p * length)
+val_len = int(logitconfig.val_p * length)
+test_len = length - train_len - val_len
+
 logprob_dataset = LogprobDataset(
     lp_dataset=raw_dataset,
     cal_dataset=raw_dataset_cal
 )
 
-logprob_loader = DataLoader(
-    dataset=logprob_dataset, 
-    batch_size=32,
+logprob_train, logprob_val, logprob_test = random_split(
+    logprob_dataset,
+    [train_len, val_len, test_len],
+    generator=torch.Generator().manual_seed(42)
+)
+
+logprob_train_loader = DataLoader(
+    dataset=logprob_train, 
+    batch_size=logitconfig.batch_num,
     shuffle=True,
     collate_fn=collate_fn, # using a defined collate function, data length is different for every input
 )
 
+logprob_val_loader = DataLoader(
+    dataset=logprob_val, 
+    batch_size=logitconfig.batch_num,
+    shuffle=True,
+    collate_fn=collate_fn, 
+)
+
+logprob_test_loader = DataLoader(
+    dataset=logprob_test, 
+    batch_size=logitconfig.batch_num,
+    shuffle=True,
+    collate_fn=collate_fn, 
+)
+
+# Set linear dataset
 linear_dataset = LinearDataset(
     orig_dataset=raw_dataset,
     cal_dataset=raw_dataset_cal
 )
 
-linear_loader = DataLoader(
-    dataset=linear_dataset,
-    batch_size=32,
+length = len(linear_dataset)
+
+train_len = int(linearconfig.train_p * length)
+val_len = int(linearconfig.val_p * length)
+test_len = length - train_len - val_len
+
+linear_train, linear_val, linear_test = random_split(
+    linear_dataset,
+    [train_len, val_len, test_len],
+    generator=torch.Generator().manual_seed(42),
+)
+
+linear_train_loader = DataLoader(
+    dataset=linear_train,
+    batch_size=linearconfig.batch_num,
+    shuffle=True,
+)
+
+linear_val_loader = DataLoader(
+    dataset=linear_val,
+    batch_size=linearconfig.batch_num,
+    shuffle=True,
+)
+
+linear_test_loader = DataLoader(
+    dataset=linear_test,
+    batch_size=linearconfig.batch_num,
     shuffle=True,
 )

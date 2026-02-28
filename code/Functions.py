@@ -8,6 +8,37 @@ import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
+
+class LinearConfig:
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 32
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    stop_patience = 10
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+class LogitConfig:
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 32
+    drop_out = 0.2
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    patience = 10
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 def LoadCorpus(dataset):
     corpus = {}
     idx = 0

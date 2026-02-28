@@ -3,18 +3,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model=5, max_len=150):
+    def __init__(self):
         super().__init__()
+        token_num = 5
+        max_len = 75
 
-        pe = torch.zeros(max_len, d_model)
+        pe = torch.zeros(max_len, token_num)
 
         self.position = torch.arange(start=0, end=max_len, step=1).float().unsqueeze(1)
-        self.embedding_index = torch.arange(start=0, end=d_model, step=2).float()
+        self.embedding_index = torch.arange(start=0, end=token_num, step=2).float()
 
-        self.div_term = 1 / torch.tensor(10_000) ** (self.embedding_index / d_model)
+        self.div_term = 1 / torch.tensor(10_000) ** (self.embedding_index / token_num)
 
         pe[:, 0::2] = torch.sin(self.position * self.div_term)
-        pe[:, 1:d_model:2] = torch.cos(self.position * self.div_term[:d_model // 2])
+        pe[:, 1:token_num:2] = torch.cos(self.position * self.div_term[:token_num // 2])
 
         self.register_buffer("pe", pe)
 
@@ -22,12 +24,13 @@ class PositionalEncoding(nn.Module):
         return x + self.pe[:x.size(1), :].unsqueeze(0)
 
 class Attention(nn.Module):
-    def __init__(self, d_model=5):
+    def __init__(self, inner_feature):
         super().__init__()
+        token_num = 5
 
-        self.w_q = nn.Linear(in_features=d_model, out_features=32, bias=False)
-        self.w_k = nn.Linear(in_features=d_model, out_features=32, bias=False)
-        self.w_v = nn.Linear(in_features=d_model, out_features=32, bias=False)
+        self.w_q = nn.Linear(in_features=token_num, out_features=inner_feature, bias=False)
+        self.w_k = nn.Linear(in_features=token_num, out_features=inner_feature, bias=False)
+        self.w_v = nn.Linear(in_features=token_num, out_features=inner_feature, bias=False)
 
         self.row_dim = 1
         self.col_dim = 2
@@ -48,14 +51,15 @@ class Attention(nn.Module):
         return attention_scores
 
 class LogitModel(nn.Module):
-    def __init__(self, out_features=1, d_model=5, max_len=150):
+    def __init__(self, config):
         super().__init__()
 
-        self.pe = PositionalEncoding(d_model=d_model, max_len=max_len)
-        self.self_attention = Attention(d_model=d_model)
+        self.pe = PositionalEncoding()
+        self.self_attention = Attention(inner_feature=config.attention_size)
         self.pooling_layer = nn.AdaptiveAvgPool1d(1)
-        self.dropout = nn.Dropout(p=0.2)
-        self.fc_attention = nn.Linear(in_features=32, out_features=out_features)
+        self.dropout = nn.Dropout(p=config.drop_out)
+
+        self.fc_attention = nn.Linear(in_features=config.attention_size, out_features=1)
         self.fc_final = nn.Linear(in_features=3, out_features=1)
 
     def forward(self, resp1_logits, resp2_logits, cosine_sim, entropy):
@@ -82,17 +86,17 @@ class LogitModel(nn.Module):
         return F.sigmoid(res)
 
 class LinearModel(nn.Module):
-    def __init__(self, d_model=32):
+    def __init__(self, config):
         super().__init__()
 
-        self.fc1 = nn.Linear(in_features=2, out_features=d_model)
-        self.batch_norm = nn.BatchNorm1d(num_features=d_model)
-        self.fc2 = nn.Linear(in_features=d_model, out_features=1)
+        self.fc1 = nn.Linear(in_features=2, out_features=config.d_model)
+        self.batch_norm = nn.BatchNorm1d(num_features=config.d_model)
+        self.fc2 = nn.Linear(in_features=config.d_model, out_features=1)
         
     
     def forward(self, cosine_sim, entropy):
 
-        combined = torch.cat([cosine_sim, entropy], dim=1)
+        combined = torch.cat([cosine_sim.unsqueeze(1), entropy.unsqueeze(1)], dim=1)
         linear_output1 = self.fc1(combined)
         normalized = self.batch_norm(linear_output1)
         linear_output2 = self.fc2(normalized)
