@@ -54,12 +54,14 @@ class LogitModel(nn.Module):
     def __init__(self, config):
         super().__init__()
 
+        self.is_linear = False
+
         self.pe = PositionalEncoding()
-        self.self_attention = Attention(inner_feature=config.attention_size)
+        self.self_attention = Attention(inner_feature=config.d_model)
         self.pooling_layer = nn.AdaptiveAvgPool1d(1)
         self.dropout = nn.Dropout(p=config.drop_out)
 
-        self.fc_attention = nn.Linear(in_features=config.attention_size, out_features=1)
+        self.fc_attention = nn.Linear(in_features=config.d_model, out_features=1)
         self.fc_final = nn.Linear(in_features=3, out_features=1)
 
     def forward(self, resp1_logits, resp2_logits, cosine_sim, entropy):
@@ -88,6 +90,8 @@ class LogitModel(nn.Module):
 class LinearModel(nn.Module):
     def __init__(self, config):
         super().__init__()
+
+        self.is_linear = True
 
         self.fc1 = nn.Linear(in_features=2, out_features=config.d_model)
         self.batch_norm = nn.BatchNorm1d(num_features=config.d_model)

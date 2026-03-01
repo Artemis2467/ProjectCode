@@ -2,14 +2,17 @@ import os
 import math
 import re
 import json
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
-
 class LinearConfig:
+
+    criterion = nn.BCELoss()
 
     train_p = 0.75
     val_p = 0.125
@@ -25,6 +28,8 @@ class LinearConfig:
 
 class LogitConfig:
 
+    criterion = nn.BCELoss()
+
     train_p = 0.75
     val_p = 0.125
 
@@ -37,22 +42,6 @@ class LogitConfig:
     patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-def LoadCorpus(dataset):
-    corpus = {}
-    idx = 0
-    for i in range(len(dataset)):
-        for word in dataset[i][0][:-1].split():
-            if word.lower() not in corpus.values():
-                corpus[idx] = word.lower()
-                idx += 1
-        for x in range(len(dataset[i][1])):
-            for word in dataset[i][1][x].split():
-                if word.lower() not in corpus.values():
-                    corpus[idx] = word.lower()
-                    idx += 1
-    return corpus
 
 def retrieve_tag():
     halueval = FileLoader()
@@ -116,6 +105,102 @@ def store_data(ans_dataset: str, cal_dataset: str):
             f.write("\n")
             json.dump(res2, f, ensure_ascii=False)
             f.write("\n")
+
+def run_batch(config, 
+              loader, 
+              model, 
+              optimizer,
+              type: str, 
+              epoch: int | None
+              ):
+    
+    total_loss = 0.0
+
+    if type == "train":
+        model.train()
+    
+        for batch in tqdm(loader, desc=f"epoch: {config.num_epochs}/{epoch + 1}"):
+            batch = {k: v.to(config.device) for k, v in batch.items()}
+
+            optimizer.zero_grad()
+            if model.is_linear:
+                output = model(batch["cos_sim"], batch["entropy"])
+            else:
+                output = model(
+                    batch["logprobs1"],
+                    batch["logprobs2"],
+                    batch["cos_sim"],
+                    batch["entropy"]
+                )
+
+            loss = config.criterion(output, batch["labels"].unsqueeze(1))
+            loss.backward()
+            optimizer.step()
+
+            total_loss += loss * batch["cos_sim"].size(0)
+
+    elif type == "val":
+        model.eval()
+
+        with torch.no_grad():
+            for batch in loader:
+                batch = {k: v.to(config.device) for k, v in batch.items()}
+
+                if model.is_linear:
+                    output = model(batch["cos_sim"], batch["entropy"])
+                else:
+                    output = model(
+                        batch["logprobs1"],
+                        batch["logprobs2"],
+                        batch["cos_sim"],
+                        batch["entropy"]
+                    )
+
+                loss = config.criterion(output, batch["labels"].unsqueeze(1))
+
+                total_loss += loss * batch["cos_sim"].size(0)
+    
+    elif type == "test":
+        model.eval()
+        results = []
+        targets = []
+
+        with torch.no_grad():
+            for batch in loader:
+                batch = {k: v.to(config.device) for k, v in batch.items()}
+
+                if model.is_linear:
+                    output = model(batch["cos_sim"], batch["entropy"])
+                else:
+                    output = model(
+                        batch["logprobs1"],
+                        batch["logprobs2"],
+                        batch["cos_sim"],
+                        batch["entropy"]
+                    )
+                results.append(output.squeeze(1).tolist())
+                targets.append(batch["labels"].tolist())
+        
+        results = [item for res in results for item in res]
+        targets = [item for tar in targets for item in tar]
+        
+        return results, targets
+
+    else:
+        raise RuntimeError("type is not recognized")
+
+    
+    return total_loss
+
+def plot_loss(history):
+    plt.figure(figsize=(8, 5))
+    plt.plot(history["running_loss"], label='running_loss', color='blue')
+    plt.plot(history["val_loss"], label='val_loss', color='red', linestyle="dashed")
+    plt.title('validation vs running loss')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+    plt.show()
 
 if __name__ == "__main__":
     store_data(ans_dataset="TruthfulDataset.jsonl", cal_dataset="CalDataset.jsonl")

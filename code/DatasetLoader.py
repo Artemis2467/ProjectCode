@@ -51,7 +51,7 @@ class LinearDataset(Dataset):
     
     def __getitem__(self, idx):
 
-        label = torch.tensor(self.org["label"][idx // 2][idx % 2]).float()
+        label = torch.tensor(self.org["label"][idx // 2][0] or self.org["label"][idx // 2][1]).float()
 
         cos_sim = torch.tensor(self.cal["cos_sim"][idx]).float()
         entropy = torch.tensor(self.cal["entropy"][idx]).float()
