@@ -26,7 +26,7 @@ for epoch in range(config.num_epochs):
 
         optimizer.zero_grad()
         output = model(batch["cos_sim"], batch["entropy"])
-        loss = criterion(output, batch["label"].unsqueeze(1))
+        loss = criterion(output, batch["labels"].unsqueeze(1))
         loss.backward()
         optimizer.step()
         running_loss += loss.item() * batch["cos_sim"].size(0)
@@ -38,7 +38,7 @@ for epoch in range(config.num_epochs):
             batch = {k: v.to(device) for k, v in batch.items()}
 
             output = model(batch["cos_sim"], batch["entropy"])
-            loss = criterion(output, batch["label"].unsqueeze(1))
+            loss = criterion(output, batch["labes"].unsqueeze(1))
             val_loss += loss.item() * batch["cos_sim"].size(0)
     
     running_loss /= len(linear_train_loader)

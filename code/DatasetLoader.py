@@ -59,7 +59,7 @@ class LinearDataset(Dataset):
         return {
             "cos_sim": cos_sim, 
             "entropy": entropy, 
-            "label": label
+            "labels": label
         }
     
 def collate_fn(batch):

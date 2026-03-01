@@ -46,7 +46,7 @@ config = LinearConfig()
 model = LinearModel(config)
 graph_roc_curve(
     config,
-    logprob_test_loader,
+    linear_test_loader,
     model,
     "best_linear_model.pth"
 )
