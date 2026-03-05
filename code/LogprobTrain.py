@@ -3,7 +3,7 @@ import torch.optim as optim
 import torch.nn as nn
 from tqdm import tqdm
 from Layers import LogitModel
-from Functions import LogitConfig, plot_loss
+from Functions import LogitConfig, plot_loss, run_batch
 from DatasetLoader import logprob_train_loader, logprob_val_loader
 
 config = LogitConfig()
@@ -19,39 +19,22 @@ prev_loss = float("inf")
 for epoch in range(config.num_epochs):
     model.train()
 
-    running_loss = 0.0
-    for batch in tqdm(logprob_train_loader, desc=f"epoch: {config.num_epochs}/{epoch + 1}"):
-        batch = {k: v.to(device) for k, v in batch.items()}
+    running_loss = run_batch(
+        config=config,
+        loader=logprob_train_loader,
+        model=model,
+        optimizer=optimizer,
+        type="train",
+        epoch=epoch
+    )
 
-        optimizer.zero_grad()
-        output = model(
-            batch["logprobs1"],
-            batch["logprobs2"],
-            batch["cos_sim"],
-            batch["entropy"]
-        )
-        loss = criterion(output, batch["labels"].unsqueeze(1))
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item() * batch["cos_sim"].size(0)
-
-    model.eval()
-
-    val_loss = 0.0
-    with torch.no_grad():
-        for batch in logprob_val_loader:
-            batch = {k: v.to(device) for k, v in batch.items()}
-
-            output = model(
-                batch["logprobs1"],
-                batch["logprobs2"],
-                batch["cos_sim"],
-                batch["entropy"]
-            )
-            loss = criterion(output, batch["labels"].unsqueeze(1))
-
-            val_loss += loss.item() * batch["cos_sim"].size(0)
+    val_loss = run_batch(
+        config=config,
+        loader=logprob_val_loader,
+        model=model,
+        optimizer=optimizer,
+        type="val",
+    )
 
     running_loss /= len(logprob_train_loader.dataset)
     val_loss /= len(logprob_val_loader.dataset)

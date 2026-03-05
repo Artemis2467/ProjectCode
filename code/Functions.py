@@ -116,7 +116,7 @@ def run_batch(config,
               model, 
               optimizer,
               type: str, 
-              epoch: int | None
+              epoch:int | None=None
               ):
     
     total_loss = 0.0
@@ -194,7 +194,6 @@ def run_batch(config,
     else:
         raise RuntimeError("type is not recognized")
 
-    
     return total_loss
 
 def plot_loss(history, is_linear):
@@ -206,12 +205,12 @@ def plot_loss(history, is_linear):
     plt.ylabel('loss')
     plt.legend()
 
-    length = count_files(r"test_results\loss")
-
     if is_linear:
-        plt.savefig(os.path.join(r"test_results\loss", f"linear_{length}.pdf"))
+        length = count_files(r"test_results\loss\linear")
+        plt.savefig(os.path.join(r"test_results\loss\linear", f"linear_{length}.pdf"))
     else:
-        plt.savefig(os.path.join(r"test_results\loss", f"logprob_{length}.pdf"))
+        length = count_files(r"test_results\loss\logprob")
+        plt.savefig(os.path.join(r"test_results\loss\logprob", f"logprob_{length}.pdf"))
     plt.show()
 
 def graph_roc_curve(config, test_loader, model, parameter_path: str):
@@ -224,7 +223,6 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
         model,
         None,
         "test",
-        None
     )
 
     fpr, tpr, threshold = roc_curve(targets, results)
@@ -239,11 +237,12 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
     plt.title(f'ROC Curve for {"linear model" if model.is_linear else "logprob model"}')
     plt.legend()
 
-    length = count_files(r"test_results\ROC")
-    if model.linear:
-        plt.savefig(os.path.join(r"test_results\ROC", f"linear_{length // 2}.pdf"))
+    if model.is_linear:
+        length = count_files(r"test_results\ROC\linear")
+        plt.savefig(os.path.join(r"test_results\ROC\linear", f"linear_{length + 1}.pdf"))
     else:
-        plt.savefig(os.path.join(r"test_results\ROC", f"logprob_{length // 2}.pdf"))
+        length = count_files(r"test_results\ROC\logprob")
+        plt.savefig(os.path.join(r"test_results\ROC\logprob", f"logprob_{length + 1}.pdf"))
 
     plt.show()
 
