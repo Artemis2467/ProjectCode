@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 from Layers import LinearModel
-from DatasetLoader import linear_train_loader, linear_val_loader
+from DatasetLoader import linear_train_loader, linear_val_loader, linear_train, linear_val
 from Functions import LinearConfig, plot_loss
 
 config = LinearConfig()
@@ -21,7 +21,7 @@ for epoch in range(config.num_epochs):
     model.train()
 
     running_loss = 0.0
-    for batch in tqdm(linear_train_loader, desc=f"epoch: {config.num_epochs}/{epoch + 1} validation loss: {prev_loss} "):
+    for batch in tqdm(linear_train_loader, desc=f"epoch: {config.num_epochs}/{epoch + 1}"):
         batch = {k: v.to(device) for k, v in batch.items()}
 
         optimizer.zero_grad()
@@ -38,11 +38,11 @@ for epoch in range(config.num_epochs):
             batch = {k: v.to(device) for k, v in batch.items()}
 
             output = model(batch["cos_sim"], batch["entropy"])
-            loss = criterion(output, batch["labes"].unsqueeze(1))
+            loss = criterion(output, batch["labels"].unsqueeze(1))
             val_loss += loss.item() * batch["cos_sim"].size(0)
     
-    running_loss /= len(linear_train_loader)
-    val_loss /= len(linear_val_loader)
+    running_loss /= len(linear_train_loader.dataset)
+    val_loss /= len(linear_val_loader.dataset)
     history['running_loss'].append(running_loss)
     history['val_loss'].append(val_loss)
             
@@ -56,4 +56,4 @@ for epoch in range(config.num_epochs):
             print(f'Early stopping at epoch {epoch + 1}')
             break
 
-plot_loss(history)
+plot_loss(history, is_linear=True)

@@ -7,6 +7,7 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from sklearn.metrics import roc_curve, auc
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
@@ -42,6 +43,10 @@ class LogitConfig:
     patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def count_files(dir):
+    files = [f for f in os.listdir(dir)]
+    return len(files)
 
 def retrieve_tag():
     halueval = FileLoader()
@@ -137,7 +142,7 @@ def run_batch(config,
             loss.backward()
             optimizer.step()
 
-            total_loss += loss * batch["cos_sim"].size(0)
+            total_loss += loss.item() * batch["cos_sim"].size(0)
 
     elif type == "val":
         model.eval()
@@ -158,7 +163,7 @@ def run_batch(config,
 
                 loss = config.criterion(output, batch["labels"].unsqueeze(1))
 
-                total_loss += loss * batch["cos_sim"].size(0)
+                total_loss += loss.item() * batch["cos_sim"].size(0)
     
     elif type == "test":
         model.eval()
@@ -192,7 +197,7 @@ def run_batch(config,
     
     return total_loss
 
-def plot_loss(history):
+def plot_loss(history, is_linear):
     plt.figure(figsize=(8, 5))
     plt.plot(history["running_loss"], label='running_loss', color='blue')
     plt.plot(history["val_loss"], label='val_loss', color='red', linestyle="dashed")
@@ -200,6 +205,46 @@ def plot_loss(history):
     plt.xlabel('epochs')
     plt.ylabel('loss')
     plt.legend()
+
+    length = count_files(r"test_results\loss")
+
+    if is_linear:
+        plt.savefig(os.path.join(r"test_results\loss", f"linear_{length}.pdf"))
+    else:
+        plt.savefig(os.path.join(r"test_results\loss", f"logprob_{length}.pdf"))
+    plt.show()
+
+def graph_roc_curve(config, test_loader, model, parameter_path: str):
+
+    model.load_state_dict(torch.load(os.path.join("models", parameter_path)))
+
+    results, targets = run_batch(
+        config,
+        test_loader,
+        model,
+        None,
+        "test",
+        None
+    )
+
+    fpr, tpr, threshold = roc_curve(targets, results)
+    auroc = auc(fpr, tpr)
+
+    plt.figure()  
+    plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auroc)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(f'ROC Curve for {"linear model" if model.is_linear else "logprob model"}')
+    plt.legend()
+
+    length = count_files(r"test_results\ROC")
+    if model.linear:
+        plt.savefig(os.path.join(r"test_results\ROC", f"linear_{length // 2}.pdf"))
+    else:
+        plt.savefig(os.path.join(r"test_results\ROC", f"logprob_{length // 2}.pdf"))
+
     plt.show()
 
 if __name__ == "__main__":

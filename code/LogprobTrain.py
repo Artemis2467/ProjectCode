@@ -4,7 +4,7 @@ import torch.nn as nn
 from tqdm import tqdm
 from Layers import LogitModel
 from Functions import LogitConfig, plot_loss
-from DatasetLoader import logprob_train_loader, logprob_val_loader, logprob_test_loader
+from DatasetLoader import logprob_train_loader, logprob_val_loader
 
 config = LogitConfig()
 device = config.device
@@ -20,7 +20,7 @@ for epoch in range(config.num_epochs):
     model.train()
 
     running_loss = 0.0
-    for batch in tqdm(logprob_train_loader, desc=f"epoch: {config.num_epochs}/{epoch + 1} validation loss: {prev_loss} "):
+    for batch in tqdm(logprob_train_loader, desc=f"epoch: {config.num_epochs}/{epoch + 1}"):
         batch = {k: v.to(device) for k, v in batch.items()}
 
         optimizer.zero_grad()
@@ -34,7 +34,7 @@ for epoch in range(config.num_epochs):
         loss.backward()
         optimizer.step()
 
-        running_loss += loss * batch["cos_sim"].size(0)
+        running_loss += loss.item() * batch["cos_sim"].size(0)
 
     model.eval()
 
@@ -51,12 +51,12 @@ for epoch in range(config.num_epochs):
             )
             loss = criterion(output, batch["labels"].unsqueeze(1))
 
-            val_loss += loss * batch["cos_sim"].size(0)
+            val_loss += loss.item() * batch["cos_sim"].size(0)
 
-    running_loss /= len(logprob_train_loader)
-    val_loss /= len(logprob_val_loader)
-    history["running_loss"].append(running_loss.detach().numpy())
-    history["val_loss"].append(val_loss.detach().numpy())
+    running_loss /= len(logprob_train_loader.dataset)
+    val_loss /= len(logprob_val_loader.dataset)
+    history["running_loss"].append(running_loss)
+    history["val_loss"].append(val_loss)
 
     if val_loss < prev_loss:
         prev_loss = val_loss
@@ -68,4 +68,4 @@ for epoch in range(config.num_epochs):
             print(f"model stopped at {epoch} epochs.")
             break
 
-plot_loss(history)
+plot_loss(history, is_linear=False)
