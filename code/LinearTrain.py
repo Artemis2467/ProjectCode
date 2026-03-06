@@ -1,16 +1,14 @@
 import torch
-import torch.nn as nn
 import torch.optim as optim
-from tqdm import tqdm
 from Layers import LinearModel
 from DatasetLoader import linear_train_loader, linear_val_loader
-from Functions import LinearConfig, plot_loss, run_batch
+from Functions import LinearConfig, plot_loss, run_batch, count_files
 
 config = LinearConfig()
 device = config.device
-model = LinearModel(config)
+length = count_files(r"models\linear")
 
-criterion = nn.BCELoss()
+model = LinearModel(config)
 optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
 
 prev_loss = float('inf')
@@ -41,7 +39,7 @@ for epoch in range(config.num_epochs):
     if val_loss < prev_loss:
         prev_loss = val_loss
         patience_count = 0
-        torch.save(model.state_dict(), 'models/best_linear_model.pth')
+        torch.save(model.state_dict(), fr'models\linear\{length + 1}.pth')
     else:
         patience_count += 1
         if patience_count >= config.stop_patience:

@@ -1,0 +1,149 @@
+hallucination count = 541
+non hallucination count = 275
+weight = 1: 1.96727
+
+Trial 1:
+
+class LinearConfig:
+
+    criterion = nn.BCELoss()
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 32
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    stop_patience = 10
+
+class LogitConfig:
+
+    criterion = nn.BCELoss()
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 32
+    drop_out = 0.2
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    patience = 10
+
+
+trial 2:
+
+class LinearConfig:
+
+    criterion = nn.BCELoss()
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 64
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    stop_patience = 10
+
+class LogitConfig:
+
+    criterion = nn.BCELoss()
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 64
+    drop_out = 0.2
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    patience = 10
+
+trial 3:
+
+class LinearConfig:
+
+    criterion = nn.BCELoss()
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 64
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.05
+    stop_patience = 10
+
+
+class LogitConfig:
+
+    criterion = nn.BCELoss()
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 64
+    drop_out = 0.1
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.05
+    patience = 10
+
+trial 4:
+    criterion = nn.BCELoss()
+
+    train_p = 0.8
+    val_p = 0.1
+
+    d_model = 64
+    drop_out = 0.0
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    patience = 10
+
+trial 5:
+
+class LinearConfig:
+
+    pos_weight = torch.tensor(0.502773)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
+    train_p = 0.75
+    val_p = 0.125
+
+    d_model = 64
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.05
+    stop_patience = 10
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+class LogitConfig:
+
+    pos_weight = torch.tensor(0.502773)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
+    train_p = 0.8
+    val_p = 0.1
+
+    d_model = 64
+    drop_out = 0.0
+
+    num_epochs = 50
+    batch_num = 32
+    learning_rate = 0.01
+    patience = 10
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

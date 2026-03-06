@@ -85,7 +85,7 @@ class LogitModel(nn.Module):
 
         res = self.fc_final(torch.cat([attention_score, cosine_sim, entropy], dim=1))
 
-        return F.sigmoid(res)
+        return res
 
 class LinearModel(nn.Module):
     def __init__(self, config):
@@ -103,7 +103,6 @@ class LinearModel(nn.Module):
         combined = torch.cat([cosine_sim.unsqueeze(1), entropy.unsqueeze(1)], dim=1)
         linear_output1 = self.fc1(combined)
         normalized = self.batch_norm(linear_output1)
-        linear_output2 = self.fc2(normalized)
-        res = F.sigmoid(linear_output2)
-
+        res = self.fc2(normalized)
+        
         return res

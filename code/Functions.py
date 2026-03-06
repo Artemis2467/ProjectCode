@@ -7,35 +7,37 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, precision_score, recall_score, f1_score
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
 class LinearConfig:
 
-    criterion = nn.BCELoss()
+    pos_weight = torch.tensor(0.502773)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     train_p = 0.75
     val_p = 0.125
 
-    d_model = 32
+    d_model = 64
 
     num_epochs = 50
     batch_num = 32
-    learning_rate = 0.01
+    learning_rate = 0.05
     stop_patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class LogitConfig:
 
-    criterion = nn.BCELoss()
+    pos_weight = torch.tensor(0.502773)
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
-    train_p = 0.75
-    val_p = 0.125
+    train_p = 0.8
+    val_p = 0.1
 
-    d_model = 32
-    drop_out = 0.2
+    d_model = 64
+    drop_out = 0.0
 
     num_epochs = 50
     batch_num = 32
@@ -183,7 +185,9 @@ def run_batch(config,
                         batch["cos_sim"],
                         batch["entropy"]
                     )
-                results.append(output.squeeze(1).tolist())
+
+                output = torch.sigmoid(output.squeeze(1))
+                results.append(output.tolist())
                 targets.append(batch["labels"].tolist())
         
         results = [item for res in results for item in res]
@@ -207,10 +211,10 @@ def plot_loss(history, is_linear):
 
     if is_linear:
         length = count_files(r"test_results\loss\linear")
-        plt.savefig(os.path.join(r"test_results\loss\linear", f"linear_{length}.pdf"))
+        plt.savefig(fr"test_results\loss\linear\linear_{length + 1}.pdf")
     else:
         length = count_files(r"test_results\loss\logprob")
-        plt.savefig(os.path.join(r"test_results\loss\logprob", f"logprob_{length}.pdf"))
+        plt.savefig(fr"test_results\loss\logprob\logprob_{length + 1}.pdf")
     plt.show()
 
 def graph_roc_curve(config, test_loader, model, parameter_path: str):
@@ -227,6 +231,13 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
 
     fpr, tpr, threshold = roc_curve(targets, results)
     auroc = auc(fpr, tpr)
+    results = [0 if result < 0.5 else 1 for result in results]
+    f1 = f1_score(targets, results, average="binary")
+    prec = precision_score(targets, results)
+    recall = recall_score(targets, results)
+    print(f1)
+    print(prec)
+    print(recall)
 
     plt.figure()  
     plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auroc)
@@ -239,10 +250,10 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
 
     if model.is_linear:
         length = count_files(r"test_results\ROC\linear")
-        plt.savefig(os.path.join(r"test_results\ROC\linear", f"linear_{length + 1}.pdf"))
+        plt.savefig(fr"test_results\ROC\linear\{length + 1}.pdf")
     else:
         length = count_files(r"test_results\ROC\logprob")
-        plt.savefig(os.path.join(r"test_results\ROC\logprob", f"logprob_{length + 1}.pdf"))
+        plt.savefig(fr"test_results\ROC\logprob\{length + 1}.pdf")
 
     plt.show()
 
