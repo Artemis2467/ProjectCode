@@ -64,6 +64,11 @@ class LogitModel(nn.Module):
         self.fc_attention = nn.Linear(in_features=config.d_model, out_features=1)
         self.fc_final = nn.Linear(in_features=3, out_features=1)
 
+        # self.conv = nn.Conv2d(1, config.conv_ch, kernel_size=(3, 3))
+        # self.pooling_layer = nn.AdaptiveMaxPool2d((1, 1))
+        # self.dropout = nn.Dropout(p=config.drop_out)
+        # self.fc_attention = nn.Linear(in_features=config.conv_ch, out_features=1)
+
     def forward(self, resp1_logits, resp2_logits, cosine_sim, entropy):
         position1 = self.pe(resp1_logits)
         position2 = self.pe(resp2_logits)
@@ -76,6 +81,9 @@ class LogitModel(nn.Module):
         
         pooled = self.pooling_layer(self_attention_values)
         pooled = pooled.view(pooled.size(0), -1)
+
+        # conv_output = self.conv(self_attention_values.unsqueeze(1))
+        # pooled = self.pooling_layer(conv_output).view(conv_output.size(0), conv_output.size(1))
 
         dropped = self.dropout(pooled)
         attention_score = self.fc_attention(dropped)
