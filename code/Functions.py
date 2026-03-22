@@ -19,33 +19,42 @@ class LinearConfig:
     train_p = 0.8
     val_p = 0.1
 
-    d_model = 128
+    d_model_choices = [32, 64, 128, 256]
 
     num_epochs = 50
     batch_num = 32
-    learning_rate = 0.01
+    learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.001]
     stop_patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    learning_rate = 0.1
+    d_model = 32
 
 class LogitConfig:
 
     pos_weight = torch.tensor(0.5)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    add_conv_choices = [False, True]
 
     train_p = 0.8
     val_p = 0.1
 
-    d_model = 128
-    conv_ch = 32
+    d_model_choices = [32, 64, 128, 256]
+    conv_ch_choices = [32, 64]
     drop_out = 0.1
 
     num_epochs = 50
     batch_num = 32
-    learning_rate = 0.01
+    learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.0001]
     patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    add_conv = False
+    d_model = 32
+    conv_ch = 32
+    learning_rate = 0.1
 
 def count_files(dir):
     files = [f for f in os.listdir(dir)]
@@ -201,7 +210,7 @@ def run_batch(config,
 
     return total_loss
 
-def plot_loss(history, is_linear):
+def plot_loss(history, is_linear, show):
     plt.figure(figsize=(8, 5))
     plt.plot(history["running_loss"], label='running_loss', color='blue')
     plt.plot(history["val_loss"], label='val_loss', color='red', linestyle="dashed")
@@ -216,10 +225,11 @@ def plot_loss(history, is_linear):
     else:
         length = count_files(r"test_results\loss\logprob")
         plt.savefig(fr"test_results\loss\logprob\logprob_{length + 1}.pdf")
-    plt.show()
 
-def graph_roc_curve(config, test_loader, model, parameter_path: str):
+    if show:
+        plt.show()
 
+def test_model(config, test_loader, model, parameter_path):
     model.load_state_dict(torch.load(os.path.join("models", parameter_path)))
 
     results, targets = run_batch(
@@ -233,12 +243,15 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
     fpr, tpr, threshold = roc_curve(targets, results)
     auroc = auc(fpr, tpr)
     results = [0 if result < 0.5 else 1 for result in results]
+
     f1 = f1_score(targets, results, average="binary")
-    prec = precision_score(targets, results)
-    recall = recall_score(targets, results)
-    print(f1)
-    print(prec)
-    print(recall)
+
+
+    return auroc, f1, fpr, tpr
+
+def graph_roc_curve(auroc, f1, fpr, tpr, is_linear):
+
+    print(f"\nf1 score: {f1}")
 
     plt.figure()  
     plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auroc)
@@ -246,10 +259,10 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title(f'ROC Curve for {"linear model" if model.is_linear else "logprob model"}')
+    plt.title(f'ROC Curve for {"linear model" if is_linear else "logprob model"}')
     plt.legend()
 
-    if model.is_linear:
+    if is_linear:
         length = count_files(r"test_results\ROC\linear")
         plt.savefig(fr"test_results\ROC\linear\{length + 1}.pdf")
     else:
