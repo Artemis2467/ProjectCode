@@ -44,17 +44,17 @@ class LogitConfig:
     conv_ch_choices = [32, 64]
     drop_out = 0.1
 
-    num_epochs = 50
+    num_epochs = 100
     batch_num = 32
     learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.0001]
     patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    add_conv = False
-    d_model = 32
+    add_conv = True
+    d_model = 256
     conv_ch = 32
-    learning_rate = 0.1
+    learning_rate = 0.0001
 
 def count_files(dir):
     files = [f for f in os.listdir(dir)]
@@ -268,8 +268,6 @@ def graph_roc_curve(auroc, f1, fpr, tpr, is_linear):
     else:
         length = count_files(r"test_results\ROC\logprob")
         plt.savefig(fr"test_results\ROC\logprob\{length + 1}.pdf")
-
-    plt.show()
 
 if __name__ == "__main__":
     store_data(ans_dataset="TruthfulDataset.jsonl", cal_dataset="CalDataset.jsonl")

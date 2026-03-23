@@ -6,8 +6,6 @@ from DatasetLoader import logprob_train_loader, logprob_val_loader, logprob_test
 
 def logprob_train(config, model_pth):
 
-    config = LogitConfig()
-
     model = LogitModel(config)
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
 

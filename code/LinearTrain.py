@@ -5,7 +5,6 @@ from DatasetLoader import linear_train_loader, linear_val_loader, linear_test_lo
 from Functions import LinearConfig, plot_loss, run_batch, test_model, graph_roc_curve
 
 def linear_train(config, model_pth):
-    config = LinearConfig()
 
     model = LinearModel(config)
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)

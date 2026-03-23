@@ -5,12 +5,13 @@ from Functions import LogitConfig, LinearConfig, test_model, count_files, plot_l
 from DatasetLoader import logprob_test_loader, linear_test_loader
 from Layers import LogitModel, LinearModel
 
-def logprob_train_model(config, count):
+def logprob_train_model(config, model, count):
     length = count_files(r"models\logprob")
     history = logprob_train(config, f"{length + 1}.pth")
     auroc, f1, fpr, tpr = test_model(config, logprob_test_loader, model, fr"logprob\{length + 1}.pth")
-    with open(r"..\history\logprob_history.txt", "a", encoding="utf-8") as f:
-        f.write(f"\n{count}\n dimension: {config.d_model} lr: {config.learning_rate}{f" CNN channel: {config.conv_ch}" if config.is_conv else ""} auroc: {auroc}")
+    print(f"auroc: {auroc}, f1: {f1}")
+    with open(r"history\logprob_history.txt", "a", encoding="utf-8") as f:
+        f.write(f"\n{count}\n dimension: {config.d_model} lr: {config.learning_rate}{f" CNN channel: {config.conv_ch}" if config.add_conv else ""} auroc: {auroc} f1: {f1}")
 
     if auroc >= 0.60:
         plot_loss(history, is_linear=False, show=False)
@@ -22,19 +23,19 @@ def logprob_train_model(config, count):
             is_linear=False
         )
 
-        with open(r"..\history\logprob_best.txt", "a", encoding="utf-8") as f:
-            f.write(f"\n{length + 1}\n dimension: {config.d_model} lr: {config.learning_rate}{f" CNN channel: {config.conv_ch}" if config.is_conv else ""}")
+        with open(r"history\logprob_best.txt", "a", encoding="utf-8") as f:
+            f.write(f"\n{length + 1}\n dimension: {config.d_model} lr: {config.learning_rate}{f" CNN channel: {config.conv_ch}" if config.add_conv else ""}")
     
     else:
         os.remove(fr"models\logprob\{length + 1}.pth")
 
-def linear_train_model(config, count):
+def linear_train_model(config, model, count):
     length = count_files(r"models\linear")
     history = linear_train(config, f"{length + 1}.pth")
     auroc, f1, fpr, tpr = test_model(config, linear_test_loader, model, fr"linear\{length + 1}.pth")
-
-    with open(r"..\history\linear_history.txt", "a", encoding="utf-8") as f:
-        f.write(f"\n{count}\n dimension: {config.d_model} lr: {config.learning_rate} auroc: {auroc}")
+    print(f"auroc: {auroc}, f1: {f1}")
+    with open(r"history\linear_history.txt", "a", encoding="utf-8") as f:
+        f.write(f"\n{count}\n dimension: {config.d_model} lr: {config.learning_rate} auroc: {auroc} f1: {f1}")
 
     if auroc >= 0.60:
         plot_loss(history, is_linear=True, show=False)
@@ -46,7 +47,7 @@ def linear_train_model(config, count):
             is_linear=True
         )
 
-        with open(r"..\history\linear_best.txt", "a", encoding="utf-8") as f:
+        with open(r"history\linear_best.txt", "a", encoding="utf-8") as f:
             f.write(f"\n{length + 1}\n dimension: {config.d_model} lr: {config.learning_rate}")
     
     else:
@@ -58,7 +59,6 @@ if __name__ == "__main__":
 
         if type == "linear":
             config = LinearConfig()
-            model = LinearModel(config)
             count = 1
 
             for dimension in config.d_model_choices:
@@ -67,13 +67,15 @@ if __name__ == "__main__":
                     config.learning_rate = lr
                     print(f"{count} / 20\n")
                     print(f"model dimension: {config.d_model} learning rate: {config.learning_rate}")
-                    linear_train_model(config, count)
+                    model = LinearModel(config)
+                    linear_train_model(config, model, count)
                     count += 1
             break
 
+
+
         elif type == "logprob":
             config = LogitConfig()
-            model = LogitModel(config)
             count = 1
 
             for is_conv in config.add_conv_choices:
@@ -89,13 +91,15 @@ if __name__ == "__main__":
                                 
                                 print(f"{count} / 60\n")
                                 print(f"model dimension: {config.d_model} learning rate: {config.learning_rate} CNN channel: {config.conv_ch}")
-                                logprob_train_model(config, count)
+                                model = LogitModel(config)
+                                logprob_train_model(config, model, count)
                                 count += 1
 
                         else:
                             print(f"{count} / 60")
                             print(f"model dimension: {config.d_model} learning rate: {config.learning_rate}")
-                            logprob_train_model(config, count)
+                            model = LogitModel(config)
+                            logprob_train_model(config, model, count)
                             count += 1
             break
 
