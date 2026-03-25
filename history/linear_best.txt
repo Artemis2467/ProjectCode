@@ -1,0 +1,39 @@
+
+5
+ dimension: 32 lr: 0.1
+6
+ dimension: 32 lr: 0.05
+7
+ dimension: 32 lr: 0.01
+8
+ dimension: 32 lr: 0.005
+9
+ dimension: 32 lr: 0.001
+10
+ dimension: 64 lr: 0.05
+11
+ dimension: 64 lr: 0.01
+12
+ dimension: 64 lr: 0.005
+13
+ dimension: 64 lr: 0.001
+14
+ dimension: 128 lr: 0.1
+15
+ dimension: 128 lr: 0.05
+16
+ dimension: 128 lr: 0.01
+17
+ dimension: 128 lr: 0.005
+18
+ dimension: 128 lr: 0.001
+19
+ dimension: 256 lr: 0.1
+20
+ dimension: 256 lr: 0.05
+21
+ dimension: 256 lr: 0.01
+22
+ dimension: 256 lr: 0.005
+23
+ dimension: 256 lr: 0.001

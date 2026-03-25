@@ -61,7 +61,7 @@ class LogitModel(nn.Module):
         self.pe = PositionalEncoding()
         self.self_attention = Attention(inner_feature=config.d_model)
 
-        if config.add_conv:
+        if config.add_conv and config.conv_ch:
             self.conv = nn.Conv2d(1, config.conv_ch, kernel_size=(3, 3))
             self.pooling_layer = nn.AdaptiveMaxPool2d((1, 1))
             self.dropout = nn.Dropout(p=config.drop_out)

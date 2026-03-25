@@ -1,5 +1,6 @@
 import torch
 import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from Layers import LogitModel
 from Functions import LogitConfig, plot_loss, run_batch, test_model, graph_roc_curve
 from DatasetLoader import logprob_train_loader, logprob_val_loader, logprob_test_loader
@@ -8,6 +9,12 @@ def logprob_train(config, model_pth):
 
     model = LogitModel(config)
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
+    scheduler = ReduceLROnPlateau(
+        optimizer, 
+        mode='min',
+        patience=5,
+        factor=0.5
+    )
 
     history = {"running_loss": [], "val_loss": []}
     prev_loss = float("inf")
@@ -36,6 +43,8 @@ def logprob_train(config, model_pth):
         val_loss /= len(logprob_val_loader.dataset)
         history["running_loss"].append(running_loss)
         history["val_loss"].append(val_loss)
+
+        scheduler.step(val_loss)
 
         if val_loss < prev_loss:
             prev_loss = val_loss

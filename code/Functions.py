@@ -7,13 +7,13 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import roc_curve, auc, precision_score, recall_score, f1_score
+from sklearn.metrics import roc_curve, auc, f1_score, classification_report
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
 class LinearConfig:
 
-    pos_weight = torch.tensor(0.502773)
+    pos_weight = torch.tensor(0.65)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     train_p = 0.8
@@ -33,7 +33,7 @@ class LinearConfig:
 
 class LogitConfig:
 
-    pos_weight = torch.tensor(0.5)
+    pos_weight = torch.tensor(0.65)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     add_conv_choices = [False, True]
 
@@ -46,15 +46,15 @@ class LogitConfig:
 
     num_epochs = 100
     batch_num = 32
-    learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.0001]
+    learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.001]
     patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    add_conv = True
-    d_model = 256
-    conv_ch = 32
-    learning_rate = 0.0001
+    add_conv = False
+    d_model = 64
+    conv_ch = 64
+    learning_rate = 0.05
 
 def count_files(dir):
     files = [f for f in os.listdir(dir)]
@@ -210,7 +210,7 @@ def run_batch(config,
 
     return total_loss
 
-def plot_loss(history, is_linear, show):
+def plot_loss(history, is_linear, show, length=None):
     plt.figure(figsize=(8, 5))
     plt.plot(history["running_loss"], label='running_loss', color='blue')
     plt.plot(history["val_loss"], label='val_loss', color='red', linestyle="dashed")
@@ -220,11 +220,13 @@ def plot_loss(history, is_linear, show):
     plt.legend()
 
     if is_linear:
-        length = count_files(r"test_results\loss\linear")
-        plt.savefig(fr"test_results\loss\linear\linear_{length + 1}.pdf")
+        if not length:
+            length = count_files(r"test_results\loss\linear") + 1
+        plt.savefig(fr"test_results\loss\linear\linear_{length}.pdf")
     else:
-        length = count_files(r"test_results\loss\logprob")
-        plt.savefig(fr"test_results\loss\logprob\logprob_{length + 1}.pdf")
+        if not length:
+            length = count_files(r"test_results\loss\logprob") + 1
+        plt.savefig(fr"test_results\loss\logprob\logprob_{length}.pdf")
 
     if show:
         plt.show()
@@ -232,7 +234,7 @@ def plot_loss(history, is_linear, show):
 def test_model(config, test_loader, model, parameter_path):
     model.load_state_dict(torch.load(os.path.join("models", parameter_path)))
 
-    results, targets = run_batch(
+    y_pred, y_true = run_batch(
         config,
         test_loader,
         model,
@@ -240,18 +242,16 @@ def test_model(config, test_loader, model, parameter_path):
         "test",
     )
 
-    fpr, tpr, threshold = roc_curve(targets, results)
+    fpr, tpr, threshold = roc_curve(y_true, y_pred)
     auroc = auc(fpr, tpr)
-    results = [0 if result < 0.5 else 1 for result in results]
+    y_pred = [0 if result < 0.5 else 1 for result in y_pred]
+    f1 = f1_score(y_true, y_pred)
+    report = classification_report(y_true, y_pred, zero_division=0)
+    report_dict = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
 
-    f1 = f1_score(targets, results, average="binary")
+    return auroc, f1, fpr, tpr, report, report_dict
 
-
-    return auroc, f1, fpr, tpr
-
-def graph_roc_curve(auroc, f1, fpr, tpr, is_linear):
-
-    print(f"\nf1 score: {f1}")
+def graph_roc_curve(auroc, fpr, tpr, is_linear, length=None):
 
     plt.figure()  
     plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auroc)
@@ -263,11 +263,13 @@ def graph_roc_curve(auroc, f1, fpr, tpr, is_linear):
     plt.legend()
 
     if is_linear:
-        length = count_files(r"test_results\ROC\linear")
-        plt.savefig(fr"test_results\ROC\linear\{length + 1}.pdf")
+        if not length:
+            length = count_files(r"test_results\ROC\linear") + 1
+        plt.savefig(fr"test_results\ROC\linear\{length}.pdf")
     else:
-        length = count_files(r"test_results\ROC\logprob")
-        plt.savefig(fr"test_results\ROC\logprob\{length + 1}.pdf")
+        if not length:
+            length = count_files(r"test_results\ROC\logprob") + 1
+        plt.savefig(fr"test_results\ROC\logprob\{length}.pdf")
 
 if __name__ == "__main__":
     store_data(ans_dataset="TruthfulDataset.jsonl", cal_dataset="CalDataset.jsonl")
