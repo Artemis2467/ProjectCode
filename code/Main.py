@@ -7,7 +7,7 @@ from DatasetLoader import logprob_test_loader, linear_test_loader, logprob_val_l
 from Layers import LogitModel, LinearModel
 
 def logprob_train_model(config, model, count, weighted):
-    history = logprob_train(config, f"third_try{count}.pth")
+    history = logprob_train(config, f"{"weighted" if weighted else ""}{count}.pth")
     threshold = calculate_threshold(model, config, logprob_val_loader)
     auroc, f1, fpr, tpr, report, report_dict = test_model(config, logprob_test_loader, threshold, model, fr"logprob\{"weighted" if weighted else ""}{count}.pth")
 
@@ -37,7 +37,7 @@ def logprob_train_model(config, model, count, weighted):
         os.remove(fr"models\logprob\sec_try{count}.pth")
 
 def linear_train_model(config, model, count, weighted):
-    history = linear_train(config, f"sec_try{count}.pth")
+    history = linear_train(config, f"{"weighted" if weighted else ""}{count}.pth")
     threshold = calculate_threshold(model, config, linear_val_loader)
     auroc, f1, fpr, tpr, report, report_dict = test_model(config, linear_test_loader, threshold, model, fr"linear\{"weighted" if weighted else ""}{count}.pth")
     print(f"\n{report}\nauroc: {auroc}")

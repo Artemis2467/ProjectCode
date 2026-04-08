@@ -1,4 +1,5 @@
-
+logprob without weight
+logprob with weigh
 1
  dimension: 64 lr: 0.005 auroc: 0.612987012987013 f1: 0.6407766990291263
 2
