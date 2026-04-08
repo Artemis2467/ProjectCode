@@ -2,13 +2,14 @@ import os
 import json
 from LinearTrain import linear_train
 from LogprobTrain import logprob_train
-from Functions import LogitConfig, LinearConfig, test_model, plot_loss, graph_roc_curve
-from DatasetLoader import logprob_test_loader, linear_test_loader
+from Functions import LogitConfig, LinearConfig, test_model, plot_loss, calculate_threshold
+from DatasetLoader import logprob_test_loader, linear_test_loader, logprob_val_loader, linear_val_loader
 from Layers import LogitModel, LinearModel
 
-def logprob_train_model(config, model, count):
-    history = logprob_train(config, f"sec_try{count}.pth")
-    auroc, f1, fpr, tpr, report, report_dict = test_model(config, logprob_test_loader, model, fr"logprob\sec_try{count}.pth")
+def logprob_train_model(config, model, count, weighted):
+    history = logprob_train(config, f"third_try{count}.pth")
+    threshold = calculate_threshold(model, config, logprob_val_loader)
+    auroc, f1, fpr, tpr, report, report_dict = test_model(config, logprob_test_loader, threshold, model, fr"logprob\{"weighted" if weighted else ""}{count}.pth")
 
     print(f"\n{report}\nauroc: {auroc}")
 
@@ -16,18 +17,13 @@ def logprob_train_model(config, model, count):
         f.write(f"\n{count}\n dimension: {config.d_model} lr: {config.learning_rate}{f" CNN channel: {config.conv_ch}" if config.add_conv else ""} auroc: {auroc} f1: {f1}")
 
     if auroc >= 0.60 and f1 >= 0.70:
-        plot_loss(history, is_linear=False, show=False)
-        graph_roc_curve(
-            auroc=auroc,
-            fpr=fpr,
-            tpr=tpr,
-            is_linear=False,
-            length=count
-        )
+        plot_loss(history, is_linear=False, show=False, length=f"{"weighted" if weighted else ""}{count}")
 
         report_dict = report_dict["1.0"]
+        accuracy = report_dict["accuracy"]
         del report_dict["support"]
-        report_dict["ID"] = count
+        report_dict["ID"] = f"{"weighted" if weighted else ""}{count}"
+        report_dict["accuracy"] = accuracy
         report_dict["auroc"] = auroc
         report_dict["d_model"] = config.d_model
         report_dict["learning_rate"] = config.learning_rate
@@ -40,26 +36,21 @@ def logprob_train_model(config, model, count):
     else:
         os.remove(fr"models\logprob\sec_try{count}.pth")
 
-def linear_train_model(config, model, count):
+def linear_train_model(config, model, count, weighted):
     history = linear_train(config, f"sec_try{count}.pth")
-    auroc, f1, fpr, tpr, report, report_dict = test_model(config, linear_test_loader, model, fr"linear\sec_try{count}.pth")
+    threshold = calculate_threshold(model, config, linear_val_loader)
+    auroc, f1, fpr, tpr, report, report_dict = test_model(config, linear_test_loader, threshold, model, fr"linear\{"weighted" if weighted else ""}{count}.pth")
     print(f"\n{report}\nauroc: {auroc}")
 
     with open(r"history\linear_history.txt", "a", encoding="utf-8") as f:
         f.write(f"\n{count}\n dimension: {config.d_model} lr: {config.learning_rate} auroc: {auroc} f1: {f1}")
 
     if auroc >= 0.60 and f1 >= 0.70:
-        plot_loss(history, is_linear=True, show=False)
-        graph_roc_curve(
-            auroc=auroc,
-            fpr=fpr,
-            tpr=tpr,
-            is_linear=True
-        )
-
+        plot_loss(history, is_linear=True, show=False, length=f"{"weighted" if weighted else ""}{count}")
+        
         report_dict = report_dict["1.0"]
         del report_dict["support"]
-        report_dict["ID"] = count
+        report_dict["ID"] = f"{"weighted" if weighted else ""}{count}"
         report_dict["auroc"] = auroc
         report_dict["d_model"] = config.d_model
         report_dict["learning_rate"] = config.learning_rate
@@ -74,6 +65,7 @@ def linear_train_model(config, model, count):
 if __name__ == "__main__":
     while True:
         type = input("linear or logporb --> ")
+        weighted = input("weighted? [y/n] ") == "y"
 
         if type == "linear":
             config = LinearConfig()
@@ -87,7 +79,7 @@ if __name__ == "__main__":
                     print(f"{count} / {total}\n")
                     print(f"model dimension: {config.d_model} learning rate: {config.learning_rate}")
                     model = LinearModel(config)
-                    linear_train_model(config, model, count)
+                    linear_train_model(config, model, count, weighted)
                     count += 1
             break
 
@@ -110,14 +102,14 @@ if __name__ == "__main__":
                                 print(f"{count} / {total}\n")
                                 print(f"model dimension: {config.d_model} learning rate: {config.learning_rate} CNN channel: {config.conv_ch}")
                                 model = LogitModel(config)
-                                logprob_train_model(config, model, count)
+                                logprob_train_model(config, model, count, weighted)
                                 count += 1
 
                         else:
                             print(f"{count} / {total}")
                             print(f"model dimension: {config.d_model} learning rate: {config.learning_rate}")
                             model = LogitModel(config)
-                            logprob_train_model(config, model, count)
+                            logprob_train_model(config, model, count, weighted)
                             count += 1
             break
 
