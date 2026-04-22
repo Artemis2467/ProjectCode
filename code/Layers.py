@@ -112,15 +112,26 @@ class LinearModel(nn.Module):
         self.is_linear = True
 
         self.fc1 = nn.Linear(in_features=2, out_features=config.d_model)
-        self.batch_norm = nn.BatchNorm1d(num_features=config.d_model)
-        self.fc2 = nn.Linear(in_features=config.d_model, out_features=1)
+        self.batch_norm1 = nn.BatchNorm1d(num_features=config.d_model)
+        self.activation1 = nn.ReLU()
+
+        self.fc2 = nn.Linear(in_features=config.d_model, out_features=config.d_model)
+        self.batch_norm2 = nn.BatchNorm1d(num_features=config.d_model)
+        self.activation2 = nn.ReLU()
         
+        self.fc3 = nn.Linear(in_features=config.d_model, out_features=1)
     
     def forward(self, cosine_sim, entropy):
 
         combined = torch.cat([cosine_sim.unsqueeze(1), entropy.unsqueeze(1)], dim=1)
-        linear_output1 = self.fc1(combined)
-        normalized = self.batch_norm(linear_output1)
-        res = self.fc2(normalized)
+        x = self.fc1(combined)
+        x = self.batch_norm1(x)
+        x = self.activation1(x)
+
+        x = self.fc2(x)
+        x = self.batch_norm2(x)
+        x = self.activation2(x)
         
+        res = self.fc3(x)
+
         return res

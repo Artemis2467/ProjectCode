@@ -34,7 +34,7 @@ def logprob_train_model(config, model, count, weighted):
             f.write("\n")
     
     else:
-        os.remove(fr"models\logprob\sec_try{count}.pth")
+        os.remove(fr"models\logprob\{"weighted" if weighted else ""}{count}.pth")
 
 def linear_train_model(config, model, count, weighted):
     history = linear_train(config, f"{"weighted" if weighted else ""}{count}.pth")
@@ -60,7 +60,7 @@ def linear_train_model(config, model, count, weighted):
             f.write("\n")
     
     else:
-        os.remove(fr"models\linear\sec_try{count}.pth")
+        os.remove(fr"models\linear\{"weighted" if weighted else ""}{count}.pth")
 
 if __name__ == "__main__":
     while True:

@@ -149,8 +149,6 @@ if __name__ == "__main__":
             plt.plot(fpr, tpr, label=f'{label} (AUC=%0.2f)' % auroc, color=COLORS[color])
 
             compare = input("Compare between models? [y/n] ") == "y"
-
-            compare = input("Compare between models? [y/n] ") == "y"
             color += 1
             if color >= 7:
                 color = 0
@@ -185,7 +183,7 @@ if __name__ == "__main__":
 
             config = LogitConfig()
             
-            id = int(input("ID of model to test -->"))
+            id = int(input("ID of logprob model to test -->"))
             weighted = input("weighted? [y/n] ") == "y"
             location = f"{"weighted" if weighted else ""}{id}"
             file = FileLoader(rf"..\history\logprob_best.jsonl")
@@ -208,7 +206,7 @@ if __name__ == "__main__":
             
             model = LogitModel(config)
 
-            auroc, f1, fpr, tpr, report, report_dict = test_model(config, logprob_test_loader, model, parameter_path=fr"logprob\{location}.pth")
+            auroc, f1, fpr, tpr, report, report_dict = test_model(config, logprob_test_loader, 0.5, model, parameter_path=fr"logprob\{location}.pth")
             label = input("model label: ")
             plt.plot(fpr, tpr, label=f'{label} (AUC=%0.2f)' % auroc, color=f"{COLORS[color]}")
 
@@ -226,7 +224,7 @@ if __name__ == "__main__":
         while True:
             config = LinearConfig()
             
-            id = int(input("ID of model to test -->"))
+            id = int(input("ID of linear model to test -->"))
             weighted = input("weighted? [y/n] ") == "y"
             location = f"{"weighted" if weighted else ""}{id}"
             file = FileLoader(rf"..\history\linear_best.jsonl")
@@ -243,7 +241,7 @@ if __name__ == "__main__":
             
             model = LinearModel(config)
 
-            auroc, f1, fpr, tpr, report, report_dict = test_model(config, linear_test_loader, model, parameter_path=fr"linear\{location}.pth")
+            auroc, f1, fpr, tpr, report, report_dict = test_model(config, linear_test_loader, 0.5, model, parameter_path=fr"linear\{location}.pth")
             label = input("model label: ")
             plt.plot(fpr, tpr, label=f'{label} (AUC=%0.2f)' % auroc, color=f"{COLORS[color]}")
 
@@ -261,13 +259,13 @@ if __name__ == "__main__":
         plt.ylabel('True Positive Rate')
         plt.title(f'ROC Curves')
         plt.legend()
-        plt.show()
 
         save = input("save? [y/n] ") == "y"
 
         if save:
             name = input("input name: ")
             plt.savefig(fr"test_results\ROC\{name}.png")
+        plt.show()
 
     else:
         raise TypeError("Mode not logprob or linear or all")
