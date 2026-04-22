@@ -15,7 +15,7 @@ from StoreDataset import FileLoader, retrieve_to
 
 class LinearConfig:
 
-    pos_weight = torch.tensor(1)
+    pos_weight = torch.tensor(0.65)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     train_p = 0.75
