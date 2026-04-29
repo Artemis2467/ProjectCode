@@ -50,13 +50,13 @@ if __name__ == "__main__":
             model = LogitModel(config)
 
             plot_distribution = input("Plot model distribution: [y/n]") == "y"
+            cal_thresh = input("Calculate threshold? [y/n] ") == "y"
 
             # calculate f1 score and auroc score
-            threshold = calculate_threshold(model, config, logprob_val_loader)
             auroc, f1, fpr, tpr, report, report_dict = test_model(
                 config, 
                 logprob_test_loader, 
-                threshold, 
+                calculate_threshold(model, config, logprob_val_loader) if cal_thresh else -1, 
                 model, 
                 parameter_path=fr"logprob\{location}.pth",
                 plot_distribution=plot_distribution
@@ -64,7 +64,6 @@ if __name__ == "__main__":
 
 
             print(report)
-            print(f"threshold: {threshold}")
             print(f"auroc score: {auroc}")
 
             if plot_distribution:
@@ -127,19 +126,18 @@ if __name__ == "__main__":
 
 
             plot_distribution = input("Plot model distribution: [y/n]") == "y"
+            cal_thresh = input("Calculate threshold? [y/n] ") == "y"
 
-            threshold = calculate_threshold(model, config, linear_val_loader)
             auroc, f1, fpr, tpr, report, report_dict = test_model(
                 config, 
                 linear_test_loader, 
-                threshold, 
+                calculate_threshold(model, config, logprob_val_loader) if cal_thresh else -1, 
                 model, 
                 parameter_path=fr"linear\{location}.pth",
                 plot_distribution=plot_distribution
                 )
             
             print(report)
-            print(f"threshold: {threshold}")
             print(f"auroc score: {auroc}")
             
             if plot_distribution:

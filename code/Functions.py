@@ -308,7 +308,7 @@ def test_model(config, test_loader, threshold, model, parameter_path, plot_distr
 
     fpr, tpr, thre = roc_curve(y_true, y_pred)
     auroc = auc(fpr, tpr)
-    y_pred = [0 if result < threshold else 1 for result in y_pred] 
+    y_pred = [0 if result < (threshold if threshold != -1 else 0.5) else 1 for result in y_pred] 
     f1 = f1_score(y_true, y_pred)
     report = classification_report(y_true, y_pred, zero_division=0)
     report_dict = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
