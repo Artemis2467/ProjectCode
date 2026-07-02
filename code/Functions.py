@@ -2,50 +2,61 @@ import os
 import math
 import re
 import json
+import seaborn as sns
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import roc_curve, auc, precision_score, recall_score, f1_score
+from sklearn.metrics import roc_curve, auc, f1_score, classification_report, precision_recall_curve
 from sentence_transformers import SentenceTransformer
 from StoreDataset import FileLoader, retrieve_to
 
 class LinearConfig:
 
-    pos_weight = torch.tensor(0.502773)
+    pos_weight = torch.tensor(0.65)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
-    train_p = 0.8
-    val_p = 0.1
+    train_p = 0.75
+    val_p = 0.15
 
-    d_model = 128
+    d_model_choices = [32, 64, 128, 256]
 
     num_epochs = 50
     batch_num = 32
-    learning_rate = 0.01
+    learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.001]
     stop_patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    learning_rate = 0.1
+    d_model = 32
+
 class LogitConfig:
 
-    pos_weight = torch.tensor(0.5)
+    pos_weight = torch.tensor(0.7)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    add_conv_choices = [False, True]
 
-    train_p = 0.8
-    val_p = 0.1
+    train_p = 0.75
+    val_p = 0.15
 
-    d_model = 128
-    conv_ch = 32
+    d_model_choices = [32, 64, 128, 256]
+    conv_ch_choices = [32, 64]
     drop_out = 0.1
 
-    num_epochs = 50
+    num_epochs = 100
     batch_num = 32
-    learning_rate = 0.01
+    learning_rate_choices = [0.1, 0.05, 0.01, 0.005, 0.001]
     patience = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    add_conv = False
+    d_model = 64
+    conv_ch = 64
+    learning_rate = 0.05
 
 def count_files(dir):
     files = [f for f in os.listdir(dir)]
@@ -201,7 +212,12 @@ def run_batch(config,
 
     return total_loss
 
-def plot_loss(history, is_linear):
+
+# ————————————————————————————————
+# plot graphs and caculate scores
+# ————————————————————————————————
+
+def plot_loss(history, is_linear, show, length=None):
     plt.figure(figsize=(8, 5))
     plt.plot(history["running_loss"], label='running_loss', color='blue')
     plt.plot(history["val_loss"], label='val_loss', color='red', linestyle="dashed")
@@ -211,18 +227,57 @@ def plot_loss(history, is_linear):
     plt.legend()
 
     if is_linear:
-        length = count_files(r"test_results\loss\linear")
-        plt.savefig(fr"test_results\loss\linear\linear_{length + 1}.pdf")
+        if not length:
+            length = count_files(r"test_results\loss\linear") + 1
+        plt.savefig(fr"test_results\loss\linear\linear_{length}.pdf")
     else:
-        length = count_files(r"test_results\loss\logprob")
-        plt.savefig(fr"test_results\loss\logprob\logprob_{length + 1}.pdf")
-    plt.show()
+        if not length:
+            length = count_files(r"test_results\loss\logprob") + 1
+        plt.savefig(fr"test_results\loss\logprob\logprob_{length}.pdf")
 
-def graph_roc_curve(config, test_loader, model, parameter_path: str):
+    if show:
+        plt.show()
 
+def calculate_threshold(model, config, val_loader):
+
+    model.eval()
+    results = []
+    targets = []
+
+    with torch.no_grad():
+        for batch in val_loader:
+            batch = {k: v.to(config.device) for k, v in batch.items()}
+
+            if model.is_linear:
+                y_pred = model(batch["cos_sim"], batch["entropy"])
+            else:
+                y_pred = model(
+                    batch["logprobs1"],
+                    batch["logprobs2"],
+                    batch["cos_sim"],
+                    batch["entropy"]
+                )
+            y_pred = torch.sigmoid(y_pred.squeeze(1))
+            results.append(y_pred.tolist())
+            targets.append(batch["labels"].tolist())
+
+    results = [item for res in results for item in res]
+    targets = [item for tar in targets for item in tar]
+
+    precision, recall, thresholds = precision_recall_curve(targets, results)
+
+    f1_scores = 2 * (precision * recall) / (precision + recall + 1e-8)
+
+    f1_scores = f1_scores[:-1]
+    best_index = np.argmax(f1_scores)
+    best_threshold = thresholds[best_index]
+
+    return best_threshold
+
+def test_model(config, test_loader, threshold, model, parameter_path, plot_distribution:bool = False):
     model.load_state_dict(torch.load(os.path.join("models", parameter_path)))
 
-    results, targets = run_batch(
+    y_pred, y_true = run_batch(
         config,
         test_loader,
         model,
@@ -230,15 +285,38 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
         "test",
     )
 
-    fpr, tpr, threshold = roc_curve(targets, results)
+    if plot_distribution:
+        plt.close(1)
+        plt.figure(2)
+        sns.histplot(data=y_pred, bins=5, kde=True, color="teal", label="model output")
+        plt.xlim(0, 1)
+
+        if input("Print 0.5 threshold? [y/n] ") == "y":
+            plt.axvline(0.5, color="b", linestyle="dashed", label="0.5 threshold")
+        if input("Print calculated threshold? [y/n] ") == "y":
+            plt.axvline(threshold, color="r", linestyle="dashed", label="calculated threshold")
+        plt.title("distribution of model output")
+        plt.legend()
+
+        save = input("save? [y/n] ") == "y"
+
+        if save:
+            name = input("input name: ")
+            plt.savefig(fr"test_results\{name}.png")
+
+        plt.show()
+
+    fpr, tpr, thre = roc_curve(y_true, y_pred)
     auroc = auc(fpr, tpr)
-    results = [0 if result < 0.5 else 1 for result in results]
-    f1 = f1_score(targets, results, average="binary")
-    prec = precision_score(targets, results)
-    recall = recall_score(targets, results)
-    print(f1)
-    print(prec)
-    print(recall)
+    y_pred = [0 if result < (threshold if threshold != -1 else 0.5) else 1 for result in y_pred] 
+    f1 = f1_score(y_true, y_pred)
+    report = classification_report(y_true, y_pred, zero_division=0)
+    report_dict = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
+
+    return auroc, f1, fpr, tpr, report, report_dict
+
+
+def graph_roc_curve(auroc, fpr, tpr, is_linear, length=None):
 
     plt.figure()  
     plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % auroc)
@@ -246,17 +324,17 @@ def graph_roc_curve(config, test_loader, model, parameter_path: str):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title(f'ROC Curve for {"linear model" if model.is_linear else "logprob model"}')
+    plt.title(f'ROC Curve for {"linear model" if is_linear else "logprob model"}')
     plt.legend()
 
-    if model.is_linear:
-        length = count_files(r"test_results\ROC\linear")
-        plt.savefig(fr"test_results\ROC\linear\{length + 1}.pdf")
+    if is_linear:
+        if not length:
+            length = count_files(r"test_results\ROC\linear") + 1
+        plt.savefig(fr"test_results\ROC\linear\{length}.pdf")
     else:
-        length = count_files(r"test_results\ROC\logprob")
-        plt.savefig(fr"test_results\ROC\logprob\{length + 1}.pdf")
-
-    plt.show()
+        if not length:
+            length = count_files(r"test_results\ROC\logprob") + 1
+        plt.savefig(fr"test_results\ROC\logprob\{length}.pdf")
 
 if __name__ == "__main__":
     store_data(ans_dataset="TruthfulDataset.jsonl", cal_dataset="CalDataset.jsonl")

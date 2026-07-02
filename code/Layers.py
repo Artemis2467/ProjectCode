@@ -21,7 +21,8 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x):
-        return x + self.pe[:x.size(1), :].unsqueeze(0)
+        res = x + self.pe[:x.size(1), :].unsqueeze(0)
+        return res
 
 class Attention(nn.Module):
     def __init__(self, inner_feature):
@@ -54,20 +55,26 @@ class LogitModel(nn.Module):
     def __init__(self, config):
         super().__init__()
 
+        self.con = config
         self.is_linear = False
 
         self.pe = PositionalEncoding()
         self.self_attention = Attention(inner_feature=config.d_model)
-        self.pooling_layer = nn.AdaptiveAvgPool1d(1)
-        self.dropout = nn.Dropout(p=config.drop_out)
 
-        self.fc_attention = nn.Linear(in_features=config.d_model, out_features=1)
+        if config.add_conv and config.conv_ch:
+            self.conv = nn.Conv2d(1, config.conv_ch, kernel_size=(3, 3))
+            self.pooling_layer = nn.AdaptiveMaxPool2d((1, 1))
+            self.dropout = nn.Dropout(p=config.drop_out)
+            self.fc_attention = nn.Linear(in_features=config.conv_ch, out_features=1)
+        elif not config.add_conv:
+            self.pooling_layer = nn.AdaptiveAvgPool1d(1)
+            self.dropout = nn.Dropout(p=config.drop_out)
+            self.fc_attention = nn.Linear(in_features=config.d_model, out_features=1)
+        else:
+            raise RuntimeError("add_conv not properly structured")
+        
         self.fc_final = nn.Linear(in_features=3, out_features=1)
 
-        # self.conv = nn.Conv2d(1, config.conv_ch, kernel_size=(3, 3))
-        # self.pooling_layer = nn.AdaptiveMaxPool2d((1, 1))
-        # self.dropout = nn.Dropout(p=config.drop_out)
-        # self.fc_attention = nn.Linear(in_features=config.conv_ch, out_features=1)
 
     def forward(self, resp1_logits, resp2_logits, cosine_sim, entropy):
         position1 = self.pe(resp1_logits)
@@ -78,12 +85,15 @@ class LogitModel(nn.Module):
             position2,
             position2,
             )
-        
-        pooled = self.pooling_layer(self_attention_values)
-        pooled = pooled.view(pooled.size(0), -1)
 
-        # conv_output = self.conv(self_attention_values.unsqueeze(1))
-        # pooled = self.pooling_layer(conv_output).view(conv_output.size(0), conv_output.size(1))
+        if self.con.add_conv:
+            conv_output = self.conv(self_attention_values.unsqueeze(1))
+            pooled = self.pooling_layer(conv_output).view(conv_output.size(0), conv_output.size(1))
+        elif not self.con.add_conv:
+            pooled = self.pooling_layer(self_attention_values)
+            pooled = pooled.view(pooled.size(0), -1)
+        else:
+            raise RuntimeError("add_conv not properly structured")
 
         dropped = self.dropout(pooled)
         attention_score = self.fc_attention(dropped)
@@ -102,15 +112,26 @@ class LinearModel(nn.Module):
         self.is_linear = True
 
         self.fc1 = nn.Linear(in_features=2, out_features=config.d_model)
-        self.batch_norm = nn.BatchNorm1d(num_features=config.d_model)
-        self.fc2 = nn.Linear(in_features=config.d_model, out_features=1)
+        self.batch_norm1 = nn.BatchNorm1d(num_features=config.d_model)
+        self.activation1 = nn.ReLU()
+
+        self.fc2 = nn.Linear(in_features=config.d_model, out_features=config.d_model)
+        self.batch_norm2 = nn.BatchNorm1d(num_features=config.d_model)
+        self.activation2 = nn.ReLU()
         
+        self.fc3 = nn.Linear(in_features=config.d_model, out_features=1)
     
     def forward(self, cosine_sim, entropy):
 
         combined = torch.cat([cosine_sim.unsqueeze(1), entropy.unsqueeze(1)], dim=1)
-        linear_output1 = self.fc1(combined)
-        normalized = self.batch_norm(linear_output1)
-        res = self.fc2(normalized)
+        x = self.fc1(combined)
+        x = self.batch_norm1(x)
+        x = self.activation1(x)
+
+        x = self.fc2(x)
+        x = self.batch_norm2(x)
+        x = self.activation2(x)
         
+        res = self.fc3(x)
+
         return res
